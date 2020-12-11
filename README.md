@@ -7,4 +7,11 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 ***
 
 ## To-do
-- come verificare che un grafo sia connesso (senza togliere la possibilità di aggiungere vertici singoli)? È necessario farlo?
+- Dalla consegna sembra che la heap_extract possa estrarre un elemento qualsiasi, ma in teoria deve essere la head. Vedi il [forum](https://elearning.unimib.it/mod/forum/discuss.php?d=145584#p247226).
+
+### Follow
+- Dubbio graph_arcs per archi bidirezionali [qui](https://elearning.unimib.it/mod/forum/discuss.php?d=146729#p248947).
+
+### Solved
+- Un arco del grafo può essere sovrascritto? **=>** deve ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=142487#p242683)).
+- Come verificare che un grafo sia connesso? È necessario farlo? **=>** i grafi possono essere non connessi ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146455#p248573)).
