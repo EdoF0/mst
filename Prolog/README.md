@@ -8,6 +8,81 @@ Il progetto ha una implementazione Lisp e una implementazione Prolog, questo è 
 
 # documentazione MST Prolog
 
+## MinHeap
+Libreria dedicata alla gestione di più minheap.  
+Tutte le operazioni di modifica includono la riorganizzazione interna della struttura dati.
+
+### Creazione e modifica
+
+#### new_heap
+```prolog
+new_heap(H)
+````
+Crea un nuovo minheap H se non esiste già. Non può fallire.
+
+#### delete_heap
+```prolog
+delete_heap(H)
+```
+Elimina il minheap H se esiste, altrimenti fallisce.
+
+#### heap_insert
+```prolog
+heap_insert(H, K, V)
+```
+Inserisce nel minheap H un valore V con chiave K.  
+Fallisce se il minheap H non esiste o se la chiave K non è un intero.
+
+#### heap_extract
+```prolog
+heap_extract(H, K, V)
+```
+Elimina dal minheap H il valore V con chiave K.  
+Fallisce se non esistono il minheap H oppure l'elemento indicato.
+
+#### modify_key
+```prolog
+modify_key(H, NewKey, OldKey, V)
+```
+Sostituisce al valore V nel minheap H la chiave OldKey con la chiave NewKey.  
+Fallisce se non esistono il minheap o l'elemento indicato.
+
+### Lettura
+
+#### heap_has_size
+```prolog
+heap_has_size(H, S)
+```
+Vero se il minheap H ha dimensione S, cioè ha S elementi.
+
+#### heap_empty
+```prolog
+heap_empty(H)
+```
+Vero se il minheap H è privo di elementi.
+
+#### heap_not_empty
+```prolog
+heap_not_empty(H)
+```
+Vero se il minheap H contiene almeno un elemento.
+
+#### heap_head
+```prolog
+heap_head(H, K, V)
+```
+Vero se l'elemento minimo del minheap H è quello con chiave K e valore V.
+
+### Stampa
+
+#### list_heap
+```prolog
+list_heap(H)
+```
+Stampa gli elementi del minheap H con il predicato speciale listing (in ordine di inserimento nella base di conoscenza Prolog).
+
+***
+
 ## Grafi
 Libreria dedicata alla gestione di più grafi indiretti e connessi con pesi non negativi.
 
@@ -41,7 +116,7 @@ Crea un nuovo arco da U a V con peso W nel grafo G se non esiste già.
 Fallisce se il grafo G non esiste oppure se uno dei due vertici U e V non esistono nel grafo G. Fallisce anche se il peso W non è un numero positivo (sono accettati numeri razionali).  
 Un arco già esistente con peso diverso sovrascrive quello precedente.
 
-### Lettura dei grafi
+### Lettura
 
 #### graph_vertices
 ```prolog
@@ -75,13 +150,13 @@ Vero se Vs è la lista di tutti i vertici adiacenti (collegati da un solo arco) 
 ```prolog
 list_vertices(G)
 ```
-Stampa i vertici del grafo G con il predicato speciale listing.
+Stampa i vertici del grafo G con il predicato speciale listing (in ordine di inserimento nella base di conoscenza Prolog).
 
 #### list_arcs
 ```prolog
 list_arcs(G)
 ```
-Stampa gli archi del grafo G con il predicato speciale listing.
+Stampa gli archi del grafo G con il predicato speciale listing (in ordine di inserimento nella base di conoscenza Prolog).
 
 #### list_graph
 ```prolog
