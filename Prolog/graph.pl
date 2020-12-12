@@ -30,12 +30,6 @@ new_arc(G, U, V, W) :- number(W), W > 0,
     vertex(G, U), assert(arc(G, U, V, W)).
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
-check_arc(G, U, V, W) :- arc(G, U, V, W).
-check_arc(G, U, V ,W) :- arc(G, V, U, W).
-
-delete_arc(G, U, V, W) :- retract(arc(G, U, V, W)).
-delete_arc(G, U, V, W) :- retract(arc(G, V, U, W)).
-
 % graph reading
 graph_vertices(G, Vs) :- findall(vertex(G, V),
     vertex(G, V), Vs).
@@ -57,7 +51,7 @@ list_arcs(G) :- graph(G), listing(arc(G, _U, _V, _W)).
 
 list_graph(G) :- graph(G), list_vertices(G), list_arcs(G).
 
-% csv file (ga = generic_arc)
+% csv file
 read_graph(G, FileName) :-
     csv_read_file(FileName, Rows,
         [separator(0'\t),
@@ -74,6 +68,13 @@ write_graph(As, FileName, edges) :-
         separator(0'\t)]), !.
 write_graph(G, FileName) :-
     write_graph(G, FileName, graph).
+
+% support
+check_arc(G, U, V, W) :- arc(G, U, V, W).
+check_arc(G, U, V ,W) :- arc(G, V, U, W).
+
+delete_arc(G, U, V, W) :- retract(arc(G, U, V, W)).
+delete_arc(G, U, V, W) :- retract(arc(G, V, U, W)).
 
 add_from_ga(_, []) :- !.
 add_from_ga(G, [generic_arc(V, U, W) | Ls]) :-
