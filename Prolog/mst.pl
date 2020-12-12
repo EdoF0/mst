@@ -30,7 +30,7 @@ new_arc(G, U, V, W) :- number(W), W > 0,
     vertex(G, U), assert(arc(G, U, V, W)).
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
-% graph reading
+% reading
 graph_vertices(G, Vs) :- findall(vertex(G, V),
     vertex(G, V), Vs).
 
