@@ -6,6 +6,10 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 
 ***
 
+## Links
+- [Prolog documentation](https://www.swi-prolog.org/pldoc/index.html).
+- [Forum studenti LP](https://elearning.unimib.it/mod/forum/view.php?id=498956).
+
 ## To-do
 - Dalla consegna sembra che la heap_extract possa estrarre un elemento qualsiasi, ma in teoria deve essere la head. Vedi il [forum](https://elearning.unimib.it/mod/forum/discuss.php?d=145584#p247226).
 - Testare la lettura e scrittura di un file csv con percorsi diversi dalla cartella corrente ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146815#p249100)).
