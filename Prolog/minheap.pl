@@ -55,46 +55,45 @@ heap_increment(H) :- heap(H, S),
 heap_decrement(H) :- heap(H, S), S > 0,
     retract(heap(H,S)), Sn is S-1, assert(heap(H, Sn)), !.
 
+buildheap(H) :- heap(H, S), Sn is floor(S/2), buildheap(H, Sn).
+buildheap(_H, 0) :- !.
+buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
+
+heap_entry_left(H, P, Pl) :- heap(H, S), P >= 1, P =< S, Pl is P*2, Pl =< S.
+heap_entry_right(H, P, Pr) :- heap(H, S), P >= 1, P =< S, Pr is P*2+1, Pr =< S.
+heap_entry_parent(H, P, Pp) :- heap(H, S), P >= 1, P =< S, Pp is floor(P/2), Pp >= 1.
+
 swap_heap_entries(H, P1, P2) :-
     retract(heap_entry(H, P1, K1, V1)),
     retract(heap_entry(H, P2, K2, V2)),
     assert(heap_entry(H, P2, K1, V1)),
     assert(heap_entry(H, P1, K2, V2)).
 
-buildheap(H) :- heap(H, S), Sn is floor(S/2), buildheap(H, Sn).
-buildheap(_H, 0) :- !.
-buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
-
-heapify_up(_H, P) :- P < 1, !.
-heapify_up(H, P) :- heap(H, _), P = 1, !.
-heapify_up(H, P) :- heap(H, _), heap_entry(H, P, K, _),
-    Pp is floor(P/2), heap_entry(H, Pp, Kp, _),
+heapify_up(H, P) :- heap_entry_parent(H, P, Pp),
+    heap_entry(H, P, K, _), heap_entry(H, Pp, Kp, _),
     Kp =< K, !.
-heapify_up(H, P) :- heap(H, _), heap_entry(H, P, K, _),
-    Pp is floor(P/2), heap_entry(H, Pp, Kp, _),
+heapify_up(H, P) :- heap_entry_parent(H, P, Pp),
+    heap_entry(H, P, K, _), heap_entry(H, Pp, Kp, _),
     K < Kp, !,
     swap_heap_entries(H, P, Pp), heapify_up(H, Pp).
+heapify_up(H, P) :- heap(H, _S), P =< 1, !.
 
-heapify(H, P) :- heap(H, S), P > S, !.
-heapify(H, P) :- heap(H, S), P*2 > S, !.
-heapify(H, P) :- heap(H, S), P*2+1 > S, heap_entry(H, P, K, _),
-    Pl is P*2, heap_entry(H, Pl, Kl, _),
-    K =< Kl, !.
-heapify(H, P) :- heap(H, S), P*2+1 > S, heap_entry(H, P, K, _),
-    Pl is P*2, heap_entry(H, Pl, Kl, _),
-    Kl < K, !,
-    swap_heap_entries(H, P, Pl), heapify(H, Pl).
-heapify(H, P) :- heap(H, _), heap_entry(H, P, K, _),
-    Pl is P*2, heap_entry(H, Pl, Kl, _),
-    Pr is Pl+1, heap_entry(H, Pr, Kr, _),
+heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
+    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _), heap_entry(H, Pr, Kr, _),
     K =< Kl, K =< Kr, !.
-heapify(H, P) :- heap(H, _), heap_entry(H, P, K, _),
-    Pl is P*2, heap_entry(H, Pl, Kl, _),
-    Pr is Pl+1, heap_entry(H, Pr, Kr, _),
-    Kl < K, Kl < Kr, !,
+heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
+    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _), heap_entry(H, Pr, Kr, _),
+    Kl =< K, Kl =< Kr, !,
     swap_heap_entries(H, P, Pl), heapify(H, Pl).
-heapify(H, P) :- heap(H, _), heap_entry(H, P, K, _),
-    Pl is P*2, heap_entry(H, Pl, Kl, _),
-    Pr is Pl+1, heap_entry(H, Pr, Kr, _),
+heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
+    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _), heap_entry(H, Pr, Kr, _),
     Kr < K, Kr < Kl, !,
     swap_heap_entries(H, P, Pr), heapify(H, Pr).
+heapify(H, P) :- heap_entry_left(H, P, Pl),
+    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _),
+    K =< Kl, !.
+heapify(H, P) :- heap_entry_left(H, P, Pl),
+    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _),
+    Kl < K, !,
+    swap_heap_entries(H, P, Pl), heapify(H, Pl).
+heapify(H, P) :- heap(H, S), Not_leaves is floor(S/2)+1, P >= Not_leaves, !.
