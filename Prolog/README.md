@@ -38,7 +38,8 @@ Fallisce se il minheap H non esiste o se la chiave K non è un intero.
 heap_extract(H, K, V)
 ```
 Elimina dal minheap H il valore V con chiave K.  
-Fallisce se non esistono il minheap H oppure l'elemento indicato.
+Fallisce se non esistono il minheap H oppure l'elemento indicato.  
+In caso di K e o V uguali per più elementi, viene eliminato il primo nell'ordine della base di conoscenza Prolog, ovvero il primo inserito.
 
 #### modify_key
 ```prolog
