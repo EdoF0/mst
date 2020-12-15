@@ -8,6 +8,45 @@ Il progetto ha una implementazione Lisp e una implementazione Prolog, questo è 
 
 # documentazione MST Prolog
 
+## MST
+Il MST (Minimum Spanning Tree) anche detto in italiano albero ricoprente minimo di un grafo, è l'albero nel quale sommando i pesi degli archi si ottiene il valore minimo e che tocca tutti i vertici del grafo di partenza.  
+L'algoritmo usato in questa libreria è l'algoritmo di Prim, noto anche con altri nomi come l'algoritmo DJP, è un algoritmo che ha origine nel 1930 ed è veloce, efficiente e relativamente semplice.  
+Il funzionamento dell'algoritmo nella sua essenza è che, a partire da un nodo arbitrario, fino al raggiungimento di tutti i vertici raggiungibili, ad ogni passo verifica il nodo più vicino all'albero finora costruito e lo inserisce nel MST.
+
+### Esecuzione
+
+#### mst_prim
+```prolog
+mst_prim(G, Source)
+```
+Calcola l'MST del grafo G a partire dal vertice Source, e aggiungi il risultato alla base dati Prolog.
+
+#### mst_get
+```prolog
+mst_get(G, Source, PreorderTree)
+```
+Vero quando PreorderTree è la lista degli archi MST generati con `mst_prim(G, Source)`.  
+PreorderTree è generata secondo una visita anticiapta (anche detta visita in preordine o pre-order tree trasversal) del MST, nei livelli ordinata secondo il peso dell'arco e, in caso di parità, in ordine lessicografico.
+
+### Dati
+
+#### vertex_key
+```prolog
+vertex_key(G, V, K)
+```
+Vero quando V fa parte del grafo G durante e dopo il calcolo di un MST, e K è il peso minimo di un arco di V che lo collega al MST.  
+K vale `inf` se V non è parte del MST, succede solo nei grafi non connessi.  
+Viene valutato falso se V non è (ancora) parte del MST.
+
+#### vertex_previous
+```prolog
+vertex_previous(G, V, U)
+```
+Vero quando V fa parte del grafo G durante e dopo il calcolo di un MST, e U è il genitore (parent) di V nel MST.  
+Viene valutato falso se V non è (ancora) parte del MST.
+
+***
+
 ## MinHeap
 Libreria dedicata alla gestione di più minheap.  
 Tutte le operazioni di modifica includono la riorganizzazione interna della struttura dati.
