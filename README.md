@@ -16,6 +16,7 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 
 ### Keep in mind
 - Prolog comparison, specialmente per l'ordine lessicografico, a [questa pagina](http://www.cse.unsw.edu.au/~billw/dictionaries/prolog/comparison.html).
+- Fibonacci Heap is better for Prim ([Prim Wikipedia](https://en.wikipedia.org/wiki/Prim%27s_algorithm), [Fibonacci Heap Wikipedia](https://en.wikipedia.org/wiki/Fibonacci_heap)).
 
 ### Follow
 - Dubbio graph_arcs per archi bidirezionali [qui](https://elearning.unimib.it/mod/forum/discuss.php?d=146729#p248947): deve considerare per forza validi tutti i predicati con vertici invertiti?
