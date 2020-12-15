@@ -87,7 +87,7 @@ heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
     swap_heap_entries(H, P, Pl), heapify(H, Pl).
 heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
     heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _), heap_entry(H, Pr, Kr, _),
-    Kr < K, Kr < Kl, !,
+    Kr =< K, Kr =< Kl, !,
     swap_heap_entries(H, P, Pr), heapify(H, Pr).
 heapify(H, P) :- heap_entry_left(H, P, Pl),
     heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _),
