@@ -210,7 +210,7 @@ mst_get(_G, _Source, _PreorderTree) :- !.
 
 % support
 delete_mst(G) :- retractall(vertex_previous(G, _V, _U)),
-    retractall(vertex_key(G, _Vv, _K)), delete_heap(G).
+    retractall(vertex_key(G, _Vv, _K)), delete_heap(G), !.
 delete_mst(_G) :- !.
 
 % Serve il check?
