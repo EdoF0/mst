@@ -31,18 +31,14 @@ new_arc(G, U, V, W) :- number(W), W > 0,
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
 % reading
-graph_vertices(G, Vs) :- findall(vertex(G, V),
-    vertex(G, V), Vs).
+graph_vertices(G, Vs) :- findall(vertex(G, V), vertex(G, V), Vs).
 
-graph_arcs(G, Es) :- findall(arc(G, U, V, W),
-    arc(G, U, V, W), Es).
+graph_arcs(G, Es) :- findall(arc(G, U, V, W), arc(G, U, V, W), Es).
 
 vertex_neighbors(G, V, Ns) :- vertex(G, V),
-    findall(arc(G, V, N, W),
-    check_arc(G, V, N, W), Ns).
+    findall(arc(G, V, N, W), check_arc(G, V, N, W), Ns).
 
-adjs(G, V, Vs) :- findall(vertex(G, U),
-    check_arc(G, V, U, _), Vs).
+adjs(G, V, Vs) :- findall(vertex(G, U), check_arc(G, V, U, _), Vs).
 
 % print
 list_vertices(G) :- graph(G), listing(vertex(G, _)).
@@ -186,3 +182,52 @@ heapify(H, P) :- heap_entry_left(H, P, Pl),
     Kl < K, !,
     swap_heap_entries(H, P, Pl), heapify(H, Pl).
 heapify(H, P) :- heap(H, S), Not_leaves is floor(S/2)+1, P >= Not_leaves, !.
+
+
+% mst
+
+
+% execution
+mst_prim(G, Source) :- delete_mst(G), new_graph(G), new_heap(G),
+    new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_prim(G).
+mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
+    vertex_key(G, U, _), vertex_key(G, V, _), !, heap_extract(G, W, A), mst_prim(G).
+mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
+    vertex_key(G, U, _), !, heap_extract(G, W, A), new_vertex_key(G, V, W),
+    new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
+    heap_add_arcs(G, V), mst_prim(G).
+mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, V, U, W],
+    vertex_key(G, U, _), !, heap_extract(G, W, A), new_vertex_key(G, V, W),
+    new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
+    heap_add_arcs(G, V), mst_prim(G).
+mst_prim(_G) :- !.
+
+mst_get(_G, _Source, _PreorderTree) :- !.
+
+% data
+:- dynamic vertex_key/3.
+:- dynamic vertex_previous/3.
+
+% support
+delete_mst(G) :- retractall(vertex_previous(G, _V, _U)), !,
+    retractall(vertex_key(G, _Vv, _K)), delete_heap(G).
+delete_mst(G) :- retractall(vertex_key(G, _V, _K)), !, delete_heap(G).
+delete_mst(G) :- delete_heap(G), !.
+delete_mst(_G) :- !.
+
+% Serve il check?
+new_vertex_previous(G, V, U) :- vertex_previous(G, V, U), !.
+new_vertex_previous(G, V, U) :- assert(vertex_previous(G, V, U)).
+
+new_vertex_key(G, V, K) :- vertex_key(G, V, K), !.
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld = inf, !,
+    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld =< K, !.
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), K < KOld, !,
+    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
+new_vertex_key(G, V, K) :- assert(vertex_key(G, V, K)).
+
+heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
+heap_insert_arcs(_G, []) :- !.
+heap_insert_arcs(G, [A | Ls]) :- !, A =.. [arc, G, _U, _V, W],
+    heap_insert(G, W, A), heap_insert_arcs(G, Ls).
