@@ -200,7 +200,7 @@ mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, V, U, W],
     vertex_key(G, U, _), !, heap_extract(G, W, A), new_vertex_key(G, V, W),
     new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
     heap_add_arcs(G, V), mst_prim(G).
-mst_prim(_G) :- !.
+mst_prim(G) :- heap_empty(G), !.
 
 mst_get(_G, _Source, _PreorderTree) :- !.
 
