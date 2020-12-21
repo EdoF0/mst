@@ -202,7 +202,22 @@ mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, V, U, W],
     heap_add_arcs(G, V), mst_prim(G).
 mst_prim(G) :- heap_empty(G), !.
 
-mst_get(_G, _Source, _PreorderTree) :- !.
+mst_get(G, Source, []) :- mst_vertex_neighbors(G, Source, []), !.
+mst_get(G, Source, PreorderTree) :-
+    mst_vertex_neighbors(G, Source, Arcs),
+    mst_order_arcs(Arcs, OArcs),
+    mst_get(G, Source, OArcs, PreorderTree).
+mst_get(G, Source, [ Arc | Arcs], [Arc | PreorderTree]) :-
+    Arc =.. [arc, G, Source, V, _W], !,
+    mst_get(G, V, PreorderTreeChild),
+    mst_get(G, Source, Arcs, PreorderTreeRest),
+    append(PreorderTreeChild, PreorderTreeRest, PreorderTree).
+mst_get(G, Source, [ Arc | Arcs], [Arc | PreorderTree]) :-
+    Arc =.. [arc, G, U, Source, _W], !,
+    mst_get(G, U, PreorderTreeChild),
+    mst_get(G, Source, Arcs, PreorderTreeRest),
+    append(PreorderTreeChild, PreorderTreeRest, PreorderTree).
+mst_get(_G, _Source, [], []) :- !.
 
 % data
 :- dynamic vertex_key/3.
@@ -229,3 +244,11 @@ heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
 heap_insert_arcs(_G, []) :- !.
 heap_insert_arcs(G, [A | Ls]) :- !, A =.. [arc, G, _U, _V, W],
     heap_insert(G, W, A), heap_insert_arcs(G, Ls).
+
+mst_order_arcs(L, Ss) :- sort(3, @=<, L, S), sort(4, =<, S, Ss).
+
+mst_vertex_neighbors(G, Source, Arcs) :-
+    findall(A, prev_to_arc(G, Source, A), Arcs).
+
+prev_to_arc(G, S, A) :- vertex_previous(G, U, S), check_arc(G, S, U, W),
+    A =.. [arc, G, S, U, W].
