@@ -12,22 +12,20 @@ new_graph(G) :- graph(G), !.
 new_graph(G) :- assert(graph(G)).
 
 delete_graph(G) :- graph(G), retract(graph(G)),
-    retractall(vertex(G, _)),
-    retractall(arc(G, _, _, _)).
+    retractall(vertex(G, _)), retractall(arc(G, _, _, _)).
 
 new_vertex(G, V) :- graph(G), vertex(G,V), !.
 new_vertex(G, V) :- graph(G), assert(vertex(G, V)).
 
-new_arc(G, U, V, W) :- graph(G), vertex(G, V),
-    vertex(G, U), check_arc(G, U, V, W), !.
+new_arc(G, U, V, W) :- graph(G), vertex(G, V), vertex(G, U),
+    check_arc(G, U, V, W), !.
 new_arc(G, U, V, W) :- number(W), W >= 0,
-    graph(G), vertex(G, V),
-    vertex(G, U), check_arc(G, U, V, W2),
-    delete_arc(G, U, V, W2),
-    assert(arc(G, U, V, W)), !.
+    graph(G), vertex(G, V), vertex(G, U),
+    check_arc(G, U, V, W2), !,
+    retract_arc(G, U, V, W2), assert_arc(G, U, V, W).
 new_arc(G, U, V, W) :- number(W), W >= 0,
-    graph(G), vertex(G, V),
-    vertex(G, U), assert(arc(G, U, V, W)).
+    graph(G), vertex(G, V), vertex(G, U),
+    assert_arc(G, U, V, W).
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
 % reading
@@ -66,11 +64,14 @@ write_graph(G, FileName) :-
     write_graph(G, FileName, graph).
 
 % support
-check_arc(G, U, V, W) :- arc(G, U, V, W).
-check_arc(G, U, V ,W) :- arc(G, V, U, W).
+check_arc(G, U, V, W) :- U @=< V, !, arc(G, U, V, W).
+check_arc(G, U, V ,W) :- V @< U, !, arc(G, V, U, W).
 
-delete_arc(G, U, V, W) :- retract(arc(G, U, V, W)).
-delete_arc(G, U, V, W) :- retract(arc(G, V, U, W)).
+assert_arc(G, U, V, W) :- U @=< V, !, assert(arc(G, U, V, W)).
+assert_arc(G, U, V, W) :- V @< U, !, assert(arc(G, V, U, W)).
+
+retract_arc(G, U, V, W) :- U @=< V, !, retract(arc(G, U, V, W)).
+retract_arc(G, U, V, W) :- V @< U, !, retract(arc(G, V, U, W)).
 
 add_from_ga(_, []) :- !.
 add_from_ga(G, [generic_arc(V, U, W) | Ls]) :-
@@ -80,9 +81,7 @@ add_from_ga(G, [generic_arc(V, U, W) | Ls]) :-
 arc_to_ga(arc(_, V, U, W), generic_arc(V, U, W)).
 
 arcs_to_gas([], []).
-
-arcs_to_gas([A | As], [Ga | Gas]) :-
-arc_to_ga(A, Ga), arcs_to_gas(As, Gas).
+arcs_to_gas([A | As], [Ga | Gas]) :- arc_to_ga(A, Ga), arcs_to_gas(As, Gas).
 
 
 % minheap
