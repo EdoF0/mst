@@ -11,14 +11,15 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 - [Forum studenti LP](https://elearning.unimib.it/mod/forum/view.php?id=498956).
 
 ## To-do
-- Dalla consegna sembra che la heap_extract possa estrarre un elemento qualsiasi, ma in teoria deve essere la head. Vedi il [forum](https://elearning.unimib.it/mod/forum/discuss.php?d=145584#p247226).
-- Testare la lettura e scrittura di un file csv con percorsi diversi dalla cartella corrente ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146815#p249100)).
+- Testare la lettura e scrittura di un file csv con percorsi diversi dalla cartella corrente ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146815#p249100)) **=>** Ok per sottocartelle.
 - Mettere il "." alla fine di tutti i predicati del README Prolog (Il prof ha fatto così).
 - Delete_graph/heap/altro che ritornano sempre true?
 
-### Keep in mind
-- Prolog comparison, specialmente per l'ordine lessicografico, a [questa pagina](http://www.cse.unsw.edu.au/~billw/dictionaries/prolog/comparison.html).
+### Keep in min
+
+### Optimizations - Prolog
 - Fibonacci Heap is better for Prim ([Prim Wikipedia](https://en.wikipedia.org/wiki/Prim%27s_algorithm), [Fibonacci Heap Wikipedia](https://en.wikipedia.org/wiki/Fibonacci_heap)).
+- Ordiniamo tuttti gli archi arc(_, minore, maggiore, _) all'inseriemeto per aggiungere determinismo.
 
 ### Follow
 - Dubbio graph_arcs per archi bidirezionali [qui](https://elearning.unimib.it/mod/forum/discuss.php?d=146729#p248947): deve considerare per forza validi tutti i predicati con vertici invertiti?
@@ -26,4 +27,5 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 
 ### Solved
 - Un arco del grafo può essere sovrascritto? **=>** deve ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=142487#p242683)).
-- Come verificare che un grafo sia connesso? È necessario farlo? **=>** i grafi possono essere non connessi ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146455#p248573)).
+- Come verificare che un grafo sia connesso? È necessario farlo? **=>** i grafi possono essere non connessi ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146455#p248573))
+- Dalla consegna sembra che la heap_extract possa estrarre un elemento qualsiasi, ma in teoria deve essere la head. Vedi il [forum](https://elearning.unimib.it/mod/forum/discuss.php?d=145584#p247226) **=>** fatto entrambe.
