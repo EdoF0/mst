@@ -64,11 +64,13 @@ write_graph(G, FileName) :-
     write_graph(G, FileName, graph).
 
 % support
-check_arc(G, U, V, W) :- U @=< V, !, arc(G, U, V, W).
-check_arc(G, U, V ,W) :- V @< U, !, arc(G, V, U, W).
+check_arc(G, U, V, W) :- arc(G, U, V, W).
+check_arc(G, U, V, W) :- arc(G, V, U, W).
 
-assert_arc(G, U, V, W) :- U @=< V, !, assert(arc(G, U, V, W)).
-assert_arc(G, U, V, W) :- V @< U, !, assert(arc(G, V, U, W)).
+assert_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]),
+    U @=< V, !, assert(arc(G, U, V, W)).
+assert_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]),
+    V @< U, !, assert(arc(G, V, U, W)).
 
 retract_arc(G, U, V, W) :- U @=< V, !, retract(arc(G, U, V, W)).
 retract_arc(G, U, V, W) :- V @< U, !, retract(arc(G, V, U, W)).
