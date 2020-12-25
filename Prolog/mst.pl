@@ -19,12 +19,12 @@ new_vertex(G, V) :- graph(G), assert(vertex(G, V)).
 
 new_arc(G, U, V, W) :- graph(G), vertex(G, V), vertex(G, U),
     check_arc(G, U, V, W), !.
-new_arc(G, U, V, W) :- number(W), W >= 0,
-    graph(G), vertex(G, V), vertex(G, U),
+new_arc(G, U, V, W) :- graph(G), number(W), W >= 0,
+    vertex(G, V), vertex(G, U),
     check_arc(G, U, V, W2), !,
     retract_arc(G, U, V, W2), assert_arc(G, U, V, W).
-new_arc(G, U, V, W) :- number(W), W >= 0,
-    graph(G), vertex(G, V), vertex(G, U),
+new_arc(G, U, V, W) :- graph(G), number(W), W >= 0,
+    vertex(G, V), vertex(G, U),
     assert_arc(G, U, V, W).
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
