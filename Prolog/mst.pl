@@ -4,86 +4,129 @@
 
 
 % creation and edit
-:- dynamic graph/1.
-:- dynamic vertex/2.
-:- dynamic arc/4.
+% graph(graph, [v(vertex, [a(a, 3), a(b, 1), ...]),
+% v(a, [a(vertex, 3)]) ])
 
-new_graph(G) :- graph(G), !.
-new_graph(G) :- assert(graph(G)).
+new_graph(G) :- nonvar(G), graph(G), !.
+new_graph(G) :- nonvar(G), assert_graph(G).
 
-delete_graph(G) :- graph(G), retract(graph(G)),
-    retractall(vertex(G, _)), retractall(arc(G, _, _, _)).
+delete_graph(G) :- retract_graph(G).
 
-new_vertex(G, V) :- graph(G), vertex(G,V), !.
-new_vertex(G, V) :- graph(G), assert(vertex(G, V)).
+new_vertex(G, V) :- maplist(nonvar, [G,V]), vertex(G, V), !.
+new_vertex(G, V) :- maplist(nonvar, [G,V]), assert_vertex(G, V), !.
 
-new_arc(G, U, V, W) :- graph(G), vertex(G, V), vertex(G, U),
-    check_arc(G, U, V, W), !.
-new_arc(G, U, V, W) :- graph(G), number(W), W >= 0,
-    vertex(G, V), vertex(G, U),
-    check_arc(G, U, V, W2), !,
+new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), arc(G, U, V, W), !.
+new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), arc(G, U, V, W2), !,
     retract_arc(G, U, V, W2), assert_arc(G, U, V, W).
-new_arc(G, U, V, W) :- graph(G), number(W), W >= 0,
-    vertex(G, V), vertex(G, U),
-    assert_arc(G, U, V, W).
+new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), assert_arc(G, U, V, W), !.
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
 % reading
-graph_vertices(G, Vs) :- findall(vertex(G, V), vertex(G, V), Vs).
+graph_vertices(G, Vs) :- findall(vertex(G, V), vertex_fluid(G, V), Vs).
+graph_arcs(G, Es) :- findall(arc(G, U, V, W), arc_fluid(G, U, V, W), Es).
 
-graph_arcs(G, Es) :- findall(arc(G, U, V, W), arc(G, U, V, W), Es).
-
-vertex_neighbors(G, V, Ns) :- vertex(G, V),
-    findall(arc(G, V, N, W), check_arc(G, V, N, W), Ns).
-
-adjs(G, V, Vs) :- findall(vertex(G, U), check_arc(G, V, U, _), Vs).
+vertex_neighbors(G, V, Ns) :- findall(arc(G, V, U, W), arc_fluid(G, V, U, W), Ns).
+adjs(G, V, Vs) :- findall(vertex(G, U), arc_fluid(G, V, U, _), Vs).
 
 % print
-list_vertices(G) :- graph(G), listing(vertex(G, _)).
-
-list_arcs(G) :- graph(G), listing(arc(G, _U, _V, _W)).
-
-list_graph(G) :- graph(G), list_vertices(G), list_arcs(G).
+list_vertices(G) :- graph_vertices(G, Vs), printlist(Vs).
+list_arcs(G) :- graph_arcs(G, As), printlist(As).
+list_graph(G) :- list_vertices(G), nl, list_arcs(G).
 
 % csv file
 read_graph(G, FileName) :-
     csv_read_file(FileName, Rows,
         [separator(0'\t),
-        functor(generic_arc),
-        arity(3)]),
+        functor(ga), arity(3)]),
     new_graph(G), add_from_ga(G, Rows).
 
+    % write graph solo di archi singoli?
 write_graph(G, FileName, graph) :- graph_arcs(G, As),
     write_graph(As, FileName, edges), !.
 write_graph(As, FileName, edges) :-
     arcs_to_gas(As, Gas),
     csv_write_file(FileName, Gas,
-        [functor(generic_arc), arity(3),
-        separator(0'\t)]), !.
+        [separator(0'\t),
+        functor(ga), arity(3)]), !.
 write_graph(G, FileName) :-
     write_graph(G, FileName, graph).
 
 % support
-check_arc(G, U, V, W) :- arc(G, U, V, W).
-check_arc(G, U, V, W) :- arc(G, V, U, W).
+delete_first([El | L1], El, L1) :- !.
+delete_first([E | L1], El, [E | L2]) :- delete_first(L1, El, L2).
+member_first(El, [El | _]) :- !.
+member_first(El, [_ | L]) :- member_first(El, L).
 
-assert_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]),
-    U @=< V, !, assert(arc(G, U, V, W)).
-assert_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]),
-    V @< U, !, assert(arc(G, V, U, W)).
+graph(G) :- graph(G, _).
+:- dynamic graph/2.
+assert_graph(G) :- assert_graph(G, []).
+assert_graph(G, L) :- not(graph(G)), assert(graph(G, L)).
+retract_graph(G) :- graph(G), retract(graph(G, _)).
+update_graph(G, L) :- retract_graph(G), assert_graph(G, L).
 
-retract_arc(G, U, V, W) :- U @=< V, !, retract(arc(G, U, V, W)).
-retract_arc(G, U, V, W) :- V @< U, !, retract(arc(G, V, U, W)).
+vertex(G, V) :- vertex(G, V, _).
+vertex(G, V, A) :- graph(G, L), member_first(v(V, A), L).
+vertex_fluid(G, V) :- vertex_fluid(G, V, _).
+vertex_fluid(G, V, A) :- graph(G, L), member(v(V, A), L).
+assert_vertex(G, V) :- assert_vertex(G, V, []).
+assert_vertex(G, V, A) :- not(vertex(G, V)), graph(G, L),
+    update_graph(G, [v(V, A) | L]).
+    % retract_vertex(G, V). retract vertex + retract arcs from nodes @=< V
+update_vertex(G, V, A) :- vertex(G, V), graph(G, L),
+    delete_first(L, v(V, _), LNew),
+    update_graph(G, [v(V, A) | LNew]).
+sort_graph(G) :- graph(G, L),
+    sort(1, @=<, L, LNew),
+    update_graph(G, LNew).
 
-add_from_ga(_, []) :- !.
-add_from_ga(G, [generic_arc(V, U, W) | Ls]) :-
-    new_vertex(G, V), new_vertex(G, U),
-    new_arc(G, V, U, W), add_from_ga(G, Ls).
+arc(G, U, V, W) :- vertex(G, U, A), member_first(a(V, W), A).
+arc_fluid(G, U, V, W) :- vertex_fluid(G, U, A), member(a(V, W), A).
+assert_arc(G, U, V, W) :- not(arc(G, U, V, W)), not(arc(G, V, U, W)),
+    vertex(G, U, AU), vertex(G, V, AV),
+    update_vertex(G, U, [ a(V, W) | AU]), update_vertex(G, V, [ a(U, W) | AV]).
+retract_arc(G, U, V, W) :- arc(G, U, V, W), arc(G, V, U, W),
+    vertex(G, U, AU), vertex(G, V, AV),
+    delete_first(AU, a(V, W), AUNew), delete_first(AV, a(U, W), AVNew),
+    update_vertex(G, U, AUNew), update_vertex(G, V, AVNew).
+    % update_arc serve?
+sort_vertex(G, V) :- vertex(G, V, A),
+    sort(1, @=<, A, ANew), sort(2, =<, ANew, ANew2),
+    update_vertex(G, V, ANew2).
 
-arc_to_ga(arc(_, V, U, W), generic_arc(V, U, W)).
+printlist([]) :- !.
+printlist([E | L]) :-
+    write(E), nl,
+    printlist(L).
+
+% generic_arcs ga(s)
+add_from_ga(G, Gas) :- add_from_ga(G, Gas, []).
+add_from_ga(G, [], Vs) :- update_graph(G, Vs).
+add_from_ga(G, [ga(V, U, W) | Gas], Vs) :-
+    ga_new_vertex(Vs, V, Vs1), ga_new_vertex(Vs1, U, Vs2),
+    ga_new_arc(Vs2, V, U, W, Vs3), add_from_ga(G, Gas, Vs3).
+
+ga_new_vertex(L, V, L) :- ga_vertex(L, V, _), !.
+ga_new_vertex(L, V, LNew) :- ga_assert_vertex(L, V, [], LNew).
+ga_vertex(L, V, A) :- member_first(v(V, A), L).
+ga_assert_vertex(L, V, A, [v(V, A) | L]).
+ga_update_vertex(L, V, A, [v(V, A) | L1]) :- delete_first(L, v(V, _), L1).
+
+ga_new_arc(L, V, U, W, L) :- ga_arc(L, V, U, W), !.
+ga_new_arc(L, V, U, W, LNew) :- ga_arc(L, V, U, W1),
+    ga_update_arc(L, V, U, W1, W, LNew).
+ga_new_arc(L, V, U, W, LNew) :- ga_assert_arc(L, V, U, W, LNew).
+ga_arc(L, V, U, W) :- ga_vertex(L, U, A), member_first(a(V, W), A).
+ga_assert_arc(L, V, U, W, LNew) :- ga_vertex(L, U, AU), ga_vertex(L, V, AV),
+    ga_update_vertex(L, U, [a(V, W) | AU], L1),
+    ga_update_vertex(L1, V, [a(U, W) | AV], LNew).
+ga_update_arc(L, V, U, W, WNew, LNew) :- ga_vertex(L, U, AU), ga_vertex(L, V, AV),
+    delete_first(AU, a(V, W), AUNew), delete_first(AV, a(U, W), AVNew),
+    ga_update_vertex(L, U, [a(V, WNew) | AUNew], L1),
+    ga_update_vertex(L1, V, [a(U, WNew) | AVNew], LNew).
 
 arcs_to_gas([], []).
-arcs_to_gas([A | As], [Ga | Gas]) :- arc_to_ga(A, Ga), arcs_to_gas(As, Gas).
+arcs_to_gas([arc(_, V, U, W) | As], [ga(V, U, W) | Gas]) :-
+    arcs_to_gas(As, Gas).
 
 
 % minheap
@@ -251,5 +294,5 @@ mst_order_arcs(L, Ss) :- sort(3, @=<, L, S), sort(4, =<, S, Ss).
 mst_vertex_neighbors(G, Source, Arcs) :-
     findall(A, prev_to_arc(G, Source, A), Arcs).
 
-prev_to_arc(G, S, A) :- vertex_previous(G, U, S), check_arc(G, S, U, W),
+prev_to_arc(G, S, A) :- vertex_previous(G, U, S), arc_fluid(G, S, U, W),
     A =.. [arc, G, S, U, W].
