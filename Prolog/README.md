@@ -19,7 +19,10 @@ Il funzionamento dell'algoritmo nella sua essenza è che, a partire da un nodo a
 ```prolog
 mst_prim(G, Source)
 ```
-Calcola l'MST del grafo G a partire dal vertice Source, e aggiunge il risultato alla base dati Prolog.
+Calcola l'MST del grafo G a partire dal vertice Source, e aggiunge il risultato alla base dati Prolog.  
+È possibile avere al massimo un MST per grafo, il tentativo di calcolarne altri sovrascriverà i precedenti.  
+Fallisce se il grafo G non esiste o Source non è un vertice di G.  
+Nota: durante la esecuzione è usato un heap nominato G, che verrà sovrascritto se già presente.
 
 #### mst_get
 ```prolog

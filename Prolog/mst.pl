@@ -212,7 +212,7 @@ buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
 
 
 % execution
-mst_prim(G, Source) :- delete_mst(G), graph(G), new_heap(G),
+mst_prim(G, Source) :- new_mst(G),
     vertex(G, Source), new_vertex_key(G, Source, inf), heap_add_arcs(G, Source),
     mst_prim(G), mst_inf(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
@@ -248,9 +248,11 @@ mst_get(_G, _Source, [], []) :- !.
 :- dynamic vertex_previous/3.
 
 % support
-delete_mst(G) :- retractall(vertex_previous(G, _V, _U)),
-    retractall(vertex_key(G, _Vv, _K)), delete_heap(G), !.
-delete_mst(_G) :- !.
+new_mst(G) :- graph(G), heap(G), !, retract_mst(G), assert_mst(G).
+new_mst(G) :- graph(G), assert_mst(G).
+assert_mst(G) :- not(heap(G)), new_heap(G).
+retract_mst(G) :- heap(G), retractall(vertex_previous(G, _V, _U)),
+    retractall(vertex_key(G, _Vv, _K)), delete_heap(G).
 
 mst_grow(G, U, V, W) :-
     new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W).
