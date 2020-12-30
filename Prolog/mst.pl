@@ -207,7 +207,7 @@ heapify(H, P) :- heap(H, S), Not_leaves is floor(S/2)+1, P >= Not_leaves, !.
 
 % execution
 mst_prim(G, Source) :- delete_mst(G), new_graph(G), new_heap(G),
-    new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_prim(G).
+    new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_prim(G), mst_inf(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !, heap_extract(G, W, A), mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
@@ -262,9 +262,13 @@ heap_insert_arcs(_G, []) :- !.
 heap_insert_arcs(G, [A | Ls]) :- !, A =.. [arc, G, _U, _V, W],
     heap_insert(G, W, A), heap_insert_arcs(G, Ls).
 
+mst_inf(G) :- findall(G-V, mst_excluded(G, V), L), mst_set_inf(L).
+mst_excluded(G, V) :- vertex(G, V), not(vertex_key(G, V, _)).
+mst_set_inf([]) :- !.
+mst_set_inf([G-V | L]) :- assert(vertex_key(G, V, inf)), mst_set_inf(L).
+
 mst_order_arcs(L, Ss) :- sort(3, @=<, L, S), sort(4, =<, S, Ss).
 
 mst_vertex_neighbors(G, Source, Arcs) :-
     findall(A, prev_to_arc(G, Source, A), Arcs).
-
 prev_to_arc(G, S, arc(G, S, U, W)) :- vertex_previous(G, U, S), arc_fluid(G, S, U, W).
