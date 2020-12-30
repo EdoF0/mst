@@ -7,7 +7,7 @@
 % vertex(graph, vertex, [3-a, 1-b, ...]),
 % vertex(graph, a, [3-vertex])
 
-new_graph(G) :- nonvar(G), graph(G), !.
+new_graph(G) :- nonvar(G), graph(G), !, delete_graph(G), assert_graph(G).
 new_graph(G) :- nonvar(G), assert_graph(G).
 
 delete_graph(G) :- retract_graph(G).
@@ -61,8 +61,8 @@ member_first(El, [_ | L]) :- member_first(El, L).
 assert_graph(G) :- not(graph(G)), assert(graph(G)).
 retract_graph(G) :- graph(G), retract(graph(G)), retractall(vertex(G,_,_)).
 
-vertex(G, V) :- vertex(G, V, _).
 :- dynamic vertex/3.
+vertex(G, V) :- vertex(G, V, _).
 assert_vertex(G, V) :- assert_vertex(G, V, []).
 assert_vertex(G, V, A) :- not(vertex(G, V)), assert(vertex(G, V, A)).
     % retract_vertex(G, V). retract vertex
@@ -107,43 +107,38 @@ arcs_to_gas([arc(_, V, U, W) | As], [ga(V, U, W) | Gas]) :-
 
 
 % creation and edit
-:- dynamic heap/2.
-:- dynamic heap_entry/4.
+new_heap(H) :- nonvar(H), heap(H), !, delete_heap(H), assert_heap(H).
+new_heap(H) :- nonvar(H), assert_heap(H), !.
 
-new_heap(H) :- heap(H, _S), !.
-new_heap(H) :- assert(heap(H, 0)), !.
-
-delete_heap(H) :- retractall(heap_entry(H, _P, _K, _V)), retract(heap(H, _S)).
+delete_heap(H) :- retract_heap(H).
 
 heap_insert(H, K, V) :- heap(H, S), S > 0, !, integer(K),
-    P is S+1,
-    assert(heap_entry(H, P, K, V)),
+    P is S+1, assert_heap_entry(H, P, K, V),
     heap_increment(H), heapify_up(H, P).
 heap_insert(H, K, V) :- heap(H, 0), !, integer(K),
-    assert(heap_entry(H, 1, K, V)),
+    assert_heap_entry(H, 1, K, V),
     heap_increment(H).
 
-heap_extract(H, K, V) :- heap(H, _), var(K), var(V), !,
+heap_extract(H, K, V) :- heap(H), var(K), var(V), !,
     heap_head(H, K, V), heap_extract(H, K, V).
 heap_extract(H, K, V) :- heap(H, S), heap_entry(H, P, K, V),
     P < S, !,
-    retract(heap_entry(H, P, K, V)), retract(heap_entry(H, S, K1, V1)),
-    assert(heap_entry(H, P, K1, V1)),
+    retract_heap_entry(H, P, K, V), retract_heap_entry(H, S, K1, V1),
+    assert_heap_entry(H, P, K1, V1),
     heap_decrement(H), heapify(H, P), heapify_up(H, P).
 heap_extract(H, K, V) :- heap(H, S), heap_entry(H, P, K, V),
     P = S, !,
-    retract(heap_entry(H, P, K, V)),
+    retract_heap_entry(H, P, K, V),
     heap_decrement(H).
 
-modify_key(H, NewKey, OldKey, V) :- heap(H, _),
-    retract(heap_entry(H, P, OldKey, V)), assert(heap_entry(H, P, NewKey, V)),
+modify_key(H, NewKey, OldKey, V) :- heap(H),
+    retract_heap_entry(H, P, OldKey, V), assert_heap_entry(H, P, NewKey, V),
     heapify(H, P), heapify_up(H, P).
 
 % reading
 heap_has_size(H, S) :- heap(H, S).
 
-heap_empty(H) :- heap(H, S), S =< 0.
-
+heap_empty(H) :- heap(H, S), S = 0.
 heap_not_empty(H) :- heap(H, S), S > 0.
 
 heap_head(H, K, V) :- heap_entry(H, 1, K, V).
@@ -152,54 +147,65 @@ heap_head(H, K, V) :- heap_entry(H, 1, K, V).
 list_heap(H) :- heap(H, _S), listing(heap_entry(H, _P, _K, _V)).
 
 % support
-heap_increment(H) :- heap(H, S),
-    retract(heap(H,S)), Sn is S+1, assert(heap(H, Sn)), !.
+:- dynamic heap/2.
+heap(H) :- heap(H, _S).
 
-heap_decrement(H) :- heap(H, S), S > 0,
-    retract(heap(H,S)), Sn is S-1, assert(heap(H, Sn)), !.
+assert_heap(H) :- not(heap(H)), assert_heap(H, 0).
+assert_heap(H, S) :- not(heap(H)), S >= 0, assert(heap(H, S)).
+retract_heap(H) :- heap(H), retract(heap(H, _S)), retractall(heap_entry(H, _P, _K, _V)).
+update_heap(H, SNew) :- retract(heap(H, _S)), assert_heap(H, SNew).
 
-buildheap(H) :- heap(H, S), Sn is floor(S/2), buildheap(H, Sn).
-buildheap(_H, 0) :- !.
-buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
+heap_increment(H) :- heap(H, S), SNew is S+1, update_heap(H, SNew).
+heap_decrement(H) :- heap(H, S), SNew is S-1, update_heap(H, SNew).
+
+:- dynamic heap_entry/4.
+heap_entry(H, P, K) :- heap_entry(H, P, K, _V).
+
+assert_heap_entry(H, P, K, V) :- not(heap_entry(H, P, _, _)), assert(heap_entry(H, P, K, V)).
+retract_heap_entry(H, P, K, V) :- retract(heap_entry(H, P, K, V)).
 
 heap_entry_left(H, P, Pl) :- heap(H, S), P >= 1, P =< S, Pl is P*2, Pl =< S.
 heap_entry_right(H, P, Pr) :- heap(H, S), P >= 1, P =< S, Pr is P*2+1, Pr =< S.
 heap_entry_parent(H, P, Pp) :- heap(H, S), P >= 1, P =< S, Pp is floor(P/2), Pp >= 1.
 
 swap_heap_entries(H, P1, P2) :-
-    retract(heap_entry(H, P1, K1, V1)),
-    retract(heap_entry(H, P2, K2, V2)),
-    assert(heap_entry(H, P2, K1, V1)),
-    assert(heap_entry(H, P1, K2, V2)).
+    retract_heap_entry(H, P1, K1, V1),
+    retract_heap_entry(H, P2, K2, V2),
+    assert_heap_entry(H, P2, K1, V1),
+    assert_heap_entry(H, P1, K2, V2).
 
 heapify_up(H, P) :- heap_entry_parent(H, P, Pp),
-    heap_entry(H, P, K, _), heap_entry(H, Pp, Kp, _),
+    heap_entry(H, P, K), heap_entry(H, Pp, Kp),
     Kp =< K, !.
 heapify_up(H, P) :- heap_entry_parent(H, P, Pp),
-    heap_entry(H, P, K, _), heap_entry(H, Pp, Kp, _),
+    heap_entry(H, P, K), heap_entry(H, Pp, Kp),
     K < Kp, !,
     swap_heap_entries(H, P, Pp), heapify_up(H, Pp).
-heapify_up(H, P) :- heap(H, _S), P =< 1, !.
+heapify_up(H, P) :- heap(H), P =< 1, !.
 
 heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
-    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _), heap_entry(H, Pr, Kr, _),
+    heap_entry(H, P, K), heap_entry(H, Pl, Kl), heap_entry(H, Pr, Kr),
     K =< Kl, K =< Kr, !.
 heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
-    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _), heap_entry(H, Pr, Kr, _),
+    heap_entry(H, P, K), heap_entry(H, Pl, Kl), heap_entry(H, Pr, Kr),
     Kl =< K, Kl =< Kr, !,
     swap_heap_entries(H, P, Pl), heapify(H, Pl).
 heapify(H, P) :- heap_entry_right(H, P, Pr), heap_entry_left(H, P, Pl),
-    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _), heap_entry(H, Pr, Kr, _),
+    heap_entry(H, P, K), heap_entry(H, Pl, Kl), heap_entry(H, Pr, Kr),
     Kr < K, Kr < Kl, !,
     swap_heap_entries(H, P, Pr), heapify(H, Pr).
 heapify(H, P) :- heap_entry_left(H, P, Pl),
-    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _),
+    heap_entry(H, P, K), heap_entry(H, Pl, Kl),
     K =< Kl, !.
 heapify(H, P) :- heap_entry_left(H, P, Pl),
-    heap_entry(H, P, K, _), heap_entry(H, Pl, Kl, _),
+    heap_entry(H, P, K), heap_entry(H, Pl, Kl),
     Kl < K, !,
     swap_heap_entries(H, P, Pl), heapify(H, Pl).
 heapify(H, P) :- heap(H, S), Not_leaves is floor(S/2)+1, P >= Not_leaves, !.
+
+buildheap(H) :- heap(H, S), Sn is floor(S/2), buildheap(H, Sn).
+buildheap(_H, 0) :- !.
+buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
 
 
 % mst
@@ -210,7 +216,8 @@ mst_prim(G, Source) :- delete_mst(G), graph(G), new_heap(G),
     vertex(G, Source), new_vertex_key(G, Source, inf), heap_add_arcs(G, Source),
     mst_prim(G), mst_inf(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, U, _), vertex_key(G, V, _), !, heap_extract(G, W, A), mst_prim(G).
+    vertex_key(G, U, _), vertex_key(G, V, _), !,
+    heap_extract(G, W, A), mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), !, mst_grow(G, U, V, W),
     heap_extract(G, W, A), heap_add_arcs(G, V), mst_prim(G).
