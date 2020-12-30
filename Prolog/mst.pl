@@ -215,31 +215,18 @@ buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
 mst_prim(G, Source) :- new_mst(G), vertex(G, Source),
     new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_increment(G),
     mst_prim(G), mst_inf(G).
-mst_prim(G) :- mst(G, 0), !,
-    print('stop by number of vertices, run list_heap to see heap_extract saved').
+mst_prim(G) :- mst(G, 0), !.
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !,
-    % print('caso arco interno'), nl,
-    % print('tempo heap_extract'), time(heap_extract(G, W, A)),
     heap_extract(G, W, A),
     mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, U, _), !,
-    % print('tempo mst_grow'), time(mst_grow(G, U, V, W)),
-    mst_grow(G, U, V, W),
-    % print('tempo heap_extract'), time(heap_extract(G, W, A)),
-    heap_extract(G, W, A),
-    % print('tempo heap_add_arcs'), time(heap_add_arcs(G, V)),
-    heap_add_arcs(G, V),
+    vertex_key(G, U, _), !, mst_grow(G, U, V, W),
+    heap_extract(G, W, A), heap_add_arcs(G, V),
     mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, V, _), !,
-    % print('tempo mst_grow'), time(mst_grow(G, V, U, W)),
-    mst_grow(G, V, U, W),
-    % print('tempo heap_extract'), time(heap_extract(G, W, A)),
-    heap_extract(G, W, A),
-    % print('tempo heap_add_arcs'), time(heap_add_arcs(G, U)),
-    heap_add_arcs(G, U),
+    vertex_key(G, V, _), !, mst_grow(G, V, U, W),
+    heap_extract(G, W, A), heap_add_arcs(G, U),
     mst_prim(G).
 mst_prim(G) :- heap_empty(G).
 
