@@ -212,9 +212,11 @@ buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
 
 
 % execution
-mst_prim(G, Source) :- new_mst(G),
-    vertex(G, Source), new_vertex_key(G, Source, inf), heap_add_arcs(G, Source),
+mst_prim(G, Source) :- new_mst(G), vertex(G, Source),
+    new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_increment(G),
     mst_prim(G), mst_inf(G).
+mst_prim(G) :- mst(G, 0), !,
+    print('stop by number of vertices, run list_heap to see heap_extract saved').
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !,
     % print('caso arco interno'), nl,
@@ -263,17 +265,27 @@ mst_get(_G, _Source, [], []) :- !.
 :- dynamic vertex_previous/3.
 
 % support
-new_mst(G) :- graph(G), heap(G), !, delete_mst(G), assert_mst(G).
-new_mst(G) :- graph(G), assert_mst(G).
-assert_mst(G) :- not(heap(G)), new_heap(G).
-delete_mst(G) :- heap(G), retractall(vertex_previous(G, _V, _U)),
-    retractall(vertex_key(G, _Vv, _K)), delete_heap(G).
+:- dynamic mst/2.
+mst(M) :- mst(M, _Graph_size_minus_mst_size).
+
+new_mst(M) :- graph(M), mst(M), !, delete_mst(M), assert_mst(M), new_heap(M).
+new_mst(M) :- graph(M), assert_mst(M), new_heap(M).
+delete_mst(M) :- delete_heap(M), !, retract_mst(M).
+delete_mst(M) :- retract_mst(M).
+
+assert_mst(M) :- graph_vertices(M, L), length(L, S), assert_mst(M, S).
+assert_mst(M, S) :- not(mst(M)), assert(mst(M, S)).
+retract_mst(M) :- mst(M), retract(mst(M, _)),
+    retractall(vertex_previous(M, _V, _U)), retractall(vertex_key(M, _V2, _K)).
+update_mst(M, SNew) :- retract(mst(M, _)), assert_mst(M, SNew).
+
+mst_increment(M) :- mst(M, S), SNew is S-1, update_mst(M, SNew).
 
 mst_grow(G, U, V, W) :-
-    new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W).
+    new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
+    mst_increment(G).
 
-new_vertex_previous(G, V, U) :- vertex_previous(G, V, U), !.
-new_vertex_previous(G, V, U) :- assert(vertex_previous(G, V, U)).
+new_vertex_previous(G, V, Prev) :- assert(vertex_previous(G, V, Prev)).
 
 new_vertex_key(G, V, K) :- vertex_key(G, V, K), !.
 new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld = inf, !,
