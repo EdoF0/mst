@@ -253,7 +253,7 @@ delete_mst(G) :- retractall(vertex_previous(G, _V, _U)),
 delete_mst(_G) :- !.
 
 mst_grow(G, U, V, W) :-
-    new_vertex_key(G, U, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W).
+    new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W).
 
 new_vertex_previous(G, V, U) :- vertex_previous(G, V, U), !.
 new_vertex_previous(G, V, U) :- assert(vertex_previous(G, V, U)).
