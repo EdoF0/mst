@@ -168,6 +168,7 @@ heap_entry_left(H, P, Pl) :- heap(H, S), P >= 1, P =< S, Pl is P*2, Pl =< S.
 heap_entry_right(H, P, Pr) :- heap(H, S), P >= 1, P =< S, Pr is P*2+1, Pr =< S.
 heap_entry_parent(H, P, Pp) :- heap(H, S), P >= 1, P =< S, Pp is floor(P/2), Pp >= 1.
 
+swap_heap_entries(_H, P, P) :- !.
 swap_heap_entries(H, P1, P2) :-
     retract_heap_entry(H, P1, K1, V1),
     retract_heap_entry(H, P2, K2, V2),
@@ -249,6 +250,7 @@ mst_get(_G, _Source, [], []) :- !.
 
 % data
 :- dynamic vertex_key/3.
+vertex_key(M, V) :- vertex_key(M, V, _K).
 :- dynamic vertex_previous/3.
 
 % support
@@ -271,6 +273,16 @@ mst_increment(M) :- mst(M, S), SNew is S-1, update_mst(M, SNew).
 mst_grow(G, U, V, W) :-
     new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
     mst_increment(G).
+
+mst_clean_heap(G) :- heap(G, S), mst_clean_heap(G, S), buildheap(G).
+mst_clean_heap(_G, 0) :- !.
+mst_clean_heap(G, N) :- mst_clean_heap_entry(G, N, _K, _V), !,
+    NNew is N-1, mst_clean_heap(G, NNew).
+mst_clean_heap(G, N) :- NNew is N-1, mst_clean_heap(G, NNew).
+mst_clean_heap_entry(G, P, K, V) :-
+    heap(G, S), heap_entry(G, P, K, V), V =.. [arc, G, U, T, _W],
+    vertex_key(G, U), vertex_key(G, T),
+    swap_heap_entries(G, S, P), retract_heap_entry(G, S, K, V), heap_decrement(G).
 
 new_vertex_previous(G, V, Prev) :- assert(vertex_previous(G, V, Prev)).
 
