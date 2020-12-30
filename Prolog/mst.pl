@@ -206,18 +206,17 @@ heapify(H, P) :- heap(H, S), Not_leaves is floor(S/2)+1, P >= Not_leaves, !.
 
 
 % execution
-mst_prim(G, Source) :- delete_mst(G), new_graph(G), new_heap(G),
-    new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_prim(G), mst_inf(G).
+mst_prim(G, Source) :- delete_mst(G), graph(G), new_heap(G),
+    vertex(G, Source), new_vertex_key(G, Source, inf), heap_add_arcs(G, Source),
+    mst_prim(G), mst_inf(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !, heap_extract(G, W, A), mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, U, _), !, heap_extract(G, W, A), new_vertex_key(G, V, W),
-    new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
-    heap_add_arcs(G, V), mst_prim(G).
+    vertex_key(G, U, _), !, mst_grow(G, U, V, W),
+    heap_extract(G, W, A), heap_add_arcs(G, V), mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, V, _), !, heap_extract(G, W, A), new_vertex_key(G, U, W),
-    new_vertex_previous(G, U, V), new_vertex_key(G, V, W),
-    heap_add_arcs(G, U), mst_prim(G).
+    vertex_key(G, V, _), !, mst_grow(G, V, U, W),
+    heap_extract(G, W, A), heap_add_arcs(G, U), mst_prim(G).
 mst_prim(G) :- heap_empty(G), !.
 
 mst_get(G, Source, []) :- mst_vertex_neighbors(G, Source, []), !.
@@ -245,6 +244,9 @@ mst_get(_G, _Source, [], []) :- !.
 delete_mst(G) :- retractall(vertex_previous(G, _V, _U)),
     retractall(vertex_key(G, _Vv, _K)), delete_heap(G), !.
 delete_mst(_G) :- !.
+
+mst_grow(G, U, V, W) :-
+    new_vertex_key(G, U, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W).
 
 new_vertex_previous(G, V, U) :- vertex_previous(G, V, U), !.
 new_vertex_previous(G, V, U) :- assert(vertex_previous(G, V, U)).
