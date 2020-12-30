@@ -248,10 +248,10 @@ mst_get(_G, _Source, [], []) :- !.
 :- dynamic vertex_previous/3.
 
 % support
-new_mst(G) :- graph(G), heap(G), !, retract_mst(G), assert_mst(G).
+new_mst(G) :- graph(G), heap(G), !, delete_mst(G), assert_mst(G).
 new_mst(G) :- graph(G), assert_mst(G).
 assert_mst(G) :- not(heap(G)), new_heap(G).
-retract_mst(G) :- heap(G), retractall(vertex_previous(G, _V, _U)),
+delete_mst(G) :- heap(G), retractall(vertex_previous(G, _V, _U)),
     retractall(vertex_key(G, _Vv, _K)), delete_heap(G).
 
 mst_grow(G, U, V, W) :-
@@ -270,7 +270,9 @@ new_vertex_key(G, V, K) :- assert(vertex_key(G, V, K)).
 
 heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
 heap_insert_arcs(_G, []) :- !.
-heap_insert_arcs(G, [A | Ls]) :- !, A =.. [arc, G, _U, _V, W],
+heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, V, _W],
+    vertex_key(G, V, _), !, heap_insert_arcs(G, Ls).
+heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, _V, W],
     heap_insert(G, W, A), heap_insert_arcs(G, Ls).
 
 mst_inf(G) :- findall(G-V, mst_excluded(G, V), L), mst_set_inf(L).
