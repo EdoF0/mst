@@ -217,14 +217,29 @@ mst_prim(G, Source) :- new_mst(G),
     mst_prim(G), mst_inf(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !,
-    heap_extract(G, W, A), mst_prim(G).
+    % print('caso arco interno'), nl,
+    % print('tempo heap_extract'), time(heap_extract(G, W, A)),
+    heap_extract(G, W, A),
+    mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, U, _), !, mst_grow(G, U, V, W),
-    heap_extract(G, W, A), heap_add_arcs(G, V), mst_prim(G).
+    vertex_key(G, U, _), !,
+    % print('tempo mst_grow'), time(mst_grow(G, U, V, W)),
+    mst_grow(G, U, V, W),
+    % print('tempo heap_extract'), time(heap_extract(G, W, A)),
+    heap_extract(G, W, A),
+    % print('tempo heap_add_arcs'), time(heap_add_arcs(G, V)),
+    heap_add_arcs(G, V),
+    mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, V, _), !, mst_grow(G, V, U, W),
-    heap_extract(G, W, A), heap_add_arcs(G, U), mst_prim(G).
-mst_prim(G) :- heap_empty(G), !.
+    vertex_key(G, V, _), !,
+    % print('tempo mst_grow'), time(mst_grow(G, V, U, W)),
+    mst_grow(G, V, U, W),
+    % print('tempo heap_extract'), time(heap_extract(G, W, A)),
+    heap_extract(G, W, A),
+    % print('tempo heap_add_arcs'), time(heap_add_arcs(G, U)),
+    heap_add_arcs(G, U),
+    mst_prim(G).
+mst_prim(G) :- heap_empty(G).
 
 mst_get(G, Source, []) :- mst_vertex_neighbors(G, Source, []), !.
 mst_get(G, Source, PreorderTree) :-
@@ -271,7 +286,9 @@ new_vertex_key(G, V, K) :- assert(vertex_key(G, V, K)).
 heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
 heap_insert_arcs(_G, []) :- !.
 heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, V, _W],
-    vertex_key(G, V, _), !, heap_insert_arcs(G, Ls).
+    vertex_key(G, V, _), !,
+    % print('evitato l\'inseriemento di un arco interno'), nl,
+    heap_insert_arcs(G, Ls).
 heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, _V, W],
     heap_insert(G, W, A), heap_insert_arcs(G, Ls).
 
