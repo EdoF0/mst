@@ -19,7 +19,7 @@ Il funzionamento dell'algoritmo nella sua essenza è che, a partire da un nodo a
 ```prolog
 mst_prim(G, Source)
 ```
-Calcola l'MST del grafo G a partire dal vertice Source, e aggiungi il risultato alla base dati Prolog.
+Calcola l'MST del grafo G a partire dal vertice Source, e aggiunge il risultato alla base dati Prolog.
 
 #### mst_get
 ```prolog
@@ -48,7 +48,7 @@ Viene valutato falso se V non è (ancora) parte del MST.
 ***
 
 ## MinHeap
-Libreria dedicata alla gestione di più minheap.  
+Libreria dedicata alla gestione di più binary minheap.  
 Tutte le operazioni di modifica includono la riorganizzazione interna della struttura dati.
 
 ### Creazione e modifica
@@ -57,7 +57,7 @@ Tutte le operazioni di modifica includono la riorganizzazione interna della stru
 ```prolog
 new_heap(H)
 ````
-Crea un nuovo minheap H se non esiste già. Non può fallire.
+Crea un nuovo minheap H, se H esiste già viene sovrascritto.. Non può fallire.
 
 #### delete_heap
 ```prolog
@@ -119,7 +119,7 @@ Vero se l'elemento minimo del minheap H è quello con chiave K e valore V.
 ```prolog
 list_heap(H)
 ```
-Stampa gli elementi del minheap H con il predicato speciale listing (in ordine di inserimento nella base di conoscenza Prolog).
+Stampa gli elementi del minheap H.
 
 ***
 
@@ -132,7 +132,7 @@ Libreria dedicata alla gestione di più grafi indiretti e connessi con pesi non 
 ```prolog
 new_graph(G)
 ```
-Crea un nuovo grafo G se non esiste già. Non può fallire.
+Crea un nuovo grafo G, se G esiste già viene sovrascritto. Non può fallire.
 
 #### delete_graph
 ```prolog
@@ -145,7 +145,7 @@ Elimina il grafo G se esiste, altrimenti fallisce.
 new_vertex(G, V)
 ```
 Crea un nuovo vertice V nel grafo G se non esiste già.  
-Fallisce seil grafo G non esiste.
+Fallisce se il grafo G non esiste.
 
 #### new_arc
 ```prolog
@@ -154,7 +154,7 @@ new_arc(G, U, V) ≡ new_arc(G, U, V, 1)
 ```
 Crea un nuovo arco da U a V con peso W nel grafo G se non esiste già.  
 Fallisce se il grafo G non esiste oppure se uno dei due vertici U e V non esistono nel grafo G. Fallisce anche se il peso W non è un numero positivo (sono accettati numeri razionali).  
-Un arco già esistente con peso diverso sovrascrive quello precedente.
+Creare un arco già esistente con peso diverso sovrascrive quello precedente.
 
 ### Lettura
 
@@ -190,13 +190,13 @@ Vero se Vs è la lista di tutti i vertici adiacenti (collegati da un solo arco) 
 ```prolog
 list_vertices(G)
 ```
-Stampa i vertici del grafo G con il predicato speciale listing (in ordine di inserimento nella base di conoscenza Prolog).
+Stampa i vertici del grafo G.
 
 #### list_arcs
 ```prolog
 list_arcs(G)
 ```
-Stampa gli archi del grafo G con il predicato speciale listing (in ordine di inserimento nella base di conoscenza Prolog).
+Stampa gli archi del grafo G.
 
 #### list_graph
 ```prolog
@@ -211,7 +211,7 @@ Stampa i vertici e gli archi del grafo G.
 read_graph(G, FileName)
 ```
 Crea un grafo G a partire da un file csv FileName con carattere separatore tabulazione, dove ogni riga è composta da vertce 1, vertice 2 e peso dell'arco dal vertice 1 al vertice 2.  
-Se il grafo G esiste già gli elementi del file verranno aggiunti al grafo G esistente.  
+Se il grafo G esiste già, verrà sovrascritto.  
 In caso di errore nella sintassi o nel contenuto del file il predicato verrà valutato come falso, ma tutto ciò che precede l'errore nel file csv verrà aggiunto al grafo G normalmente.
 
 #### write_graph
