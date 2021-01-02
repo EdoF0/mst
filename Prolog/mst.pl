@@ -229,7 +229,7 @@ buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
 mst_prim(G, Source) :- new_mst(G), vertex(G, Source),
     new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_increment(G),
     mst_prim(G), mst_inf(G).
-mst_prim(G) :- mst(G, 0), !.
+mst_prim(G) :- mst_complete(G), !.
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !,
     heap_extract(G, W, A),
@@ -277,13 +277,16 @@ new_mst(M) :- graph(M), assert_mst(M), new_heap(M).
 delete_mst(M) :- delete_heap(M), !, retract_mst(M).
 delete_mst(M) :- retract_mst(M).
 
-assert_mst(M) :- graph_vertices(M, L), length(L, S), assert_mst(M, S).
+assert_mst(M) :- assert_mst(M, 0).
 assert_mst(M, S) :- \+ mst(M), assert(mst(M, S)).
 retract_mst(M) :- mst(M), retract(mst(M, _)),
     retractall(vertex_previous(M, _V, _U)), retractall(vertex_key(M, _V2, _K)).
 update_mst(M, SNew) :- retract(mst(M, _)), assert_mst(M, SNew).
 
-mst_increment(M) :- mst(M, S), SNew is S-1, update_mst(M, SNew).
+mst_complete(M) :- mst(M, S), graph_vertices_n(M, S).
+mst_increment(M) :- mst(M, S), SNew is S+1, update_mst(M, SNew).
+mst_vertices_n(M, N) :- mst(M, N).
+mst_arcs_n(M, N) :- mst(M, VN), N is VN-1.
 
 %  vertex previous
 new_vertex_previous(G, V, Prev) :- assert(vertex_previous(G, V, Prev)).
@@ -332,6 +335,7 @@ mst_clean_heap_entry(G, P, K, V) :-
     swap_heap_entries(G, S, P), retract_heap_entry(G, S, K, V), heap_decrement(G).
 
 %   set non visited vertices (inf)
+mst_inf(G) :- mst_complete(G), !.
 mst_inf(G) :- findall(G-V, mst_excluded(G, V), L), mst_set_inf(L).
 mst_excluded(G, V) :- vertex(G, V), \+ vertex_key(G, V, _).
 mst_set_inf([]) :- !.
