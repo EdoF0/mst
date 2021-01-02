@@ -219,7 +219,7 @@ mst_prim(G, Source) :- new_mst(G), vertex(G, Source),
 mst_prim(G) :- mst(G, 0), !.
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !,
-    heap_extract(G, W, A),
+    heap_extract(G, W, A), mst_clean_heap_cond(G),
     mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), !, mst_grow(G, U, V, W),
@@ -274,6 +274,9 @@ mst_grow(G, U, V, W) :-
     new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
     mst_increment(G).
 
+mst_clean_heap_cond(G) :- false, heap(G, HArcs), mst(G, VRemaining),
+    HArcs >= VRemaining*2, !, mst_clean_heap(G).
+mst_clean_heap_cond(_G).
 mst_clean_heap(G) :- heap(G, S), mst_clean_heap(G, S), buildheap(G).
 mst_clean_heap(_G, 0) :- !.
 mst_clean_heap(G, N) :- mst_clean_heap_entry(G, N, _K, _V), !,
