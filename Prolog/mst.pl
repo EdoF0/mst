@@ -232,16 +232,17 @@ mst_prim(G, Source) :- new_mst(G), vertex(G, Source),
 mst_prim(G) :- mst(G, 0), !.
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), vertex_key(G, V, _), !,
-    heap_extract(G, W, A), mst_clean_heap_cond(G),
+    heap_extract(G, W, A),
+    increment_prim_fail_n, mst_clean_heap_cond(G),
     mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, U, _), !, mst_grow(G, U, V, W),
     heap_extract(G, W, A), heap_add_arcs(G, V),
-    mst_prim(G).
+    reset_prim_fail_n, mst_prim(G).
 mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
     vertex_key(G, V, _), !, mst_grow(G, V, U, W),
     heap_extract(G, W, A), heap_add_arcs(G, U),
-    mst_prim(G).
+    reset_prim_fail_n, mst_prim(G).
 mst_prim(G) :- heap_empty(G).
 
 mst_get(G, Source, []) :- mst_vertex_neighbors(G, Source, []), !.
@@ -287,8 +288,15 @@ mst_grow(G, U, V, W) :-
     new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
     mst_increment(G).
 
-mst_clean_heap_cond(G) :- false, heap(G, HArcs), mst(G, VRemaining),
-    HArcs >= VRemaining*2, !, mst_clean_heap(G).
+:- dynamic prim_fail_n/1.
+increment_prim_fail_n :- prim_fail_n(X), !, XNew is X+1, update_prim_fail_n(XNew).
+increment_prim_fail_n :- update_prim_fail_n(1).
+reset_prim_fail_n :- prim_fail_n(0).
+reset_prim_fail_n :- update_prim_fail_n(0).
+update_prim_fail_n(X) :- retract(prim_fail_n(_)), !, assert(prim_fail_n(X)).
+update_prim_fail_n(X) :- assert(prim_fail_n(X)).
+
+mst_clean_heap_cond(G) :- prim_fail_n(X), X>6, !, mst_clean_heap(G).
 mst_clean_heap_cond(_G).
 mst_clean_heap(G) :- heap(G, S), mst_clean_heap(G, S), buildheap(G).
 mst_clean_heap(_G, 0) :- !.
