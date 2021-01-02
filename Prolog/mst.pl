@@ -70,7 +70,7 @@ graph_arcs_n(G, N) :- graph(G, _, N).
 
 %  vertex
 :- dynamic vertex/3.
-vertex(Graph, Vertex) :- vertex(Graph, Vertex, _List_of_couples_Weight-Vertex).
+vertex(Graph, Vertex) :- vertex(Graph, Vertex, _List_of_couples_Weight_Vertex).
 
 assert_vertex(G, V) :- assert_vertex(G, V, []).
 assert_vertex(G, V, A) :- \+ vertex(G, V), assert(vertex(G, V, A)).
