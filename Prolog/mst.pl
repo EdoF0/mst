@@ -58,13 +58,13 @@ member_first(El, [El | _]) :- !.
 member_first(El, [_ | L]) :- member_first(El, L).
 
 :- dynamic graph/1.
-assert_graph(G) :- not(graph(G)), assert(graph(G)).
+assert_graph(G) :- \+ graph(G), assert(graph(G)).
 retract_graph(G) :- graph(G), retract(graph(G)), retractall(vertex(G,_,_)).
 
 :- dynamic vertex/3.
 vertex(G, V) :- vertex(G, V, _).
 assert_vertex(G, V) :- assert_vertex(G, V, []).
-assert_vertex(G, V, A) :- not(vertex(G, V)), assert(vertex(G, V, A)).
+assert_vertex(G, V, A) :- \+ vertex(G, V), assert(vertex(G, V, A)).
     % retract_vertex(G, V). retract vertex
 update_vertex(G, V, ANew) :- vertex(G, V, A),
     retract(vertex(G, V, A)), assert(vertex(G, V, ANew)).
@@ -72,7 +72,7 @@ update_vertex(G, V, ANew) :- vertex(G, V, A),
 arc(G, U, V, W) :- vertex(G, U, A), member_first(W-V, A).
 arc_fluid(G, U, V, W) :- vertex(G, U, A), member(W-V, A).
 arc_single_fluid(G, U, V, W) :- vertex(G, U, A), member(W-V, A), U @< V.
-assert_arc(G, U, V, W) :- not(arc(G, U, V, W)), not(arc(G, V, U, W)),
+assert_arc(G, U, V, W) :- \+ arc(G, U, V, W), \+ arc(G, V, U, W),
     vertex(G, U, AU), vertex(G, V, AV),
     update_vertex(G, U, [ W-V | AU]), update_vertex(G, V, [ W-U | AV]).
 retract_arc(G, U, V, W) :- arc(G, U, V, W), arc(G, V, U, W),
@@ -150,8 +150,8 @@ list_heap(H) :- heap(H, _S), listing(heap_entry(H, _P, _K, _V)).
 :- dynamic heap/2.
 heap(H) :- heap(H, _S).
 
-assert_heap(H) :- not(heap(H)), assert_heap(H, 0).
-assert_heap(H, S) :- not(heap(H)), S >= 0, assert(heap(H, S)).
+assert_heap(H) :- \+ heap(H), assert_heap(H, 0).
+assert_heap(H, S) :- \+ heap(H), S >= 0, assert(heap(H, S)).
 retract_heap(H) :- heap(H), retract(heap(H, _S)), retractall(heap_entry(H, _P, _K, _V)).
 update_heap(H, SNew) :- retract(heap(H, _S)), assert_heap(H, SNew).
 
@@ -161,7 +161,7 @@ heap_decrement(H) :- heap(H, S), SNew is S-1, update_heap(H, SNew).
 :- dynamic heap_entry/4.
 heap_entry(H, P, K) :- heap_entry(H, P, K, _V).
 
-assert_heap_entry(H, P, K, V) :- not(heap_entry(H, P, _, _)), assert(heap_entry(H, P, K, V)).
+assert_heap_entry(H, P, K, V) :- \+ heap_entry(H, P, _, _), assert(heap_entry(H, P, K, V)).
 retract_heap_entry(H, P, K, V) :- retract(heap_entry(H, P, K, V)).
 
 heap_entry_left(H, P, Pl) :- heap(H, S), P >= 1, P =< S, Pl is P*2, Pl =< S.
@@ -263,7 +263,7 @@ delete_mst(M) :- delete_heap(M), !, retract_mst(M).
 delete_mst(M) :- retract_mst(M).
 
 assert_mst(M) :- graph_vertices(M, L), length(L, S), assert_mst(M, S).
-assert_mst(M, S) :- not(mst(M)), assert(mst(M, S)).
+assert_mst(M, S) :- \+ mst(M), assert(mst(M, S)).
 retract_mst(M) :- mst(M), retract(mst(M, _)),
     retractall(vertex_previous(M, _V, _U)), retractall(vertex_key(M, _V2, _K)).
 update_mst(M, SNew) :- retract(mst(M, _)), assert_mst(M, SNew).
@@ -304,7 +304,7 @@ heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, _V, W],
     heap_insert(G, W, A), heap_insert_arcs(G, Ls).
 
 mst_inf(G) :- findall(G-V, mst_excluded(G, V), L), mst_set_inf(L).
-mst_excluded(G, V) :- vertex(G, V), not(vertex_key(G, V, _)).
+mst_excluded(G, V) :- vertex(G, V), \+ vertex_key(G, V, _).
 mst_set_inf([]) :- !.
 mst_set_inf([G-V | L]) :- assert(vertex_key(G, V, inf)), mst_set_inf(L).
 
