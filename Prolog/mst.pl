@@ -13,12 +13,12 @@ new_graph(G) :- nonvar(G), assert_graph(G).
 delete_graph(G) :- retract_graph(G).
 
 new_vertex(G, V) :- maplist(nonvar, [G,V]), vertex(G, V), !.
-new_vertex(G, V) :- maplist(nonvar, [G,V]), assert_vertex(G, V), !.
+new_vertex(G, V) :- maplist(nonvar, [G,V]), assert_vertex(G, V), !, graph_vertex_add(G).
 
 new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), arc(G, U, V, W), !.
 new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), arc(G, U, V, _), !,
     update_arc(G, U, V, W).
-new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), assert_arc(G, U, V, W), !.
+new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), assert_arc(G, U, V, W), !, graph_arc_add(G).
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
 % reading
@@ -57,9 +57,22 @@ delete_first([E | L1], El, [E | L2]) :- delete_first(L1, El, L2).
 member_first(El, [El | _]) :- !.
 member_first(El, [_ | L]) :- member_first(El, L).
 
-:- dynamic graph/1.
-assert_graph(G) :- \+ graph(G), assert(graph(G)).
-retract_graph(G) :- graph(G), retract(graph(G)), retractall(vertex(G,_,_)).
+:- dynamic graph/3.
+graph(G) :- graph(G, _, _).
+assert_graph(G) :- assert_graph(G, 0, 0).
+assert_graph(G, NVertices, NArcs) :- \+ graph(G), assert(graph(G, NVertices, NArcs)).
+retract_graph(G) :- retract_graph(G, _, _).
+retract_graph(G, NV, NA) :- graph(G), retract(graph(G, NV, NA)), retractall(vertex(G,_,_)).
+update_graph(G, NVNew, NANew) :- graph(G, NV, NA),
+    retract(graph(G, NV, NA)), assert(graph(G, NVNew, NANew)).
+update_graph(G) :- graph(G),
+    graph_vertices(G, Vs), length(Vs, NV),
+    graph_arcs(G, As), length(As, NA),
+    update_graph(G, NV, NA).
+graph_vertex_add(G) :- graph(G, NV, NA), NVNew is NV+1, update_graph(G, NVNew, NA).
+graph_arc_add(G) :- graph(G, NV, NA), NANew is NA+1, update_graph(G, NV, NANew).
+graph_vertices_n(G, N) :- graph(G, N, _).
+graph_arcs_n(G, N) :- graph(G, _, N).
 
 :- dynamic vertex/3.
 vertex(G, V) :- vertex(G, V, _).
