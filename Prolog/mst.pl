@@ -4,9 +4,6 @@
 
 
 % creation and edit
-% vertex(graph, vertex, [3-a, 1-b, ...]),
-% vertex(graph, a, [3-vertex])
-
 new_graph(G) :- nonvar(G), graph(G), !, delete_graph(G), assert_graph(G).
 new_graph(G) :- nonvar(G), assert_graph(G).
 
@@ -23,15 +20,15 @@ new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
 % reading
 graph_vertices(G, Vs) :- findall(vertex(G, V), vertex(G, V), Vs).
-graph_arcs(G, Es) :- findall(arc(G, U, V, W), arc_single_fluid(G, U, V, W), Es).
+graph_arcs(G, As) :- findall(arc(G, U, V, W), arc_single_fluid(G, U, V, W), As).
 
-vertex_neighbors(G, V, Ns) :- findall(arc(G, V, U, W), arc_fluid(G, V, U, W), Ns).
+vertex_neighbors(G, V, As) :- findall(arc(G, V, U, W), arc_fluid(G, V, U, W), As).
 adjs(G, V, Vs) :- findall(vertex(G, U), arc_fluid(G, V, U, _), Vs).
 
 % print
-list_vertices(G) :- graph_vertices(G, Vs), printlist(Vs).
-list_arcs(G) :- graph_arcs(G, As), printlist(As).
-list_graph(G) :- list_vertices(G), nl, list_arcs(G).
+list_vertices(G) :- graph(G), graph_vertices(G, Vs), printlist(Vs).
+list_arcs(G) :- graph(G), graph_arcs(G, As), printlist(As).
+list_graph(G) :- graph(G), list_vertices(G), nl, list_arcs(G).
 
 % csv file
 read_graph(G, FileName) :-
@@ -40,7 +37,6 @@ read_graph(G, FileName) :-
         functor(ga), arity(3)]),
     new_graph(G), add_from_ga(G, Rows).
 
-    % write graph solo di archi singoli?
 write_graph(G, FileName, graph) :- graph_arcs(G, As),
     write_graph(As, FileName, edges), !.
 write_graph(As, FileName, edges) :-
@@ -52,15 +48,12 @@ write_graph(G, FileName) :-
     write_graph(G, FileName, graph).
 
 % support
-delete_first([El | L1], El, L1) :- !.
-delete_first([E | L1], El, [E | L2]) :- delete_first(L1, El, L2).
-member_first(El, [El | _]) :- !.
-member_first(El, [_ | L]) :- member_first(El, L).
-
+%  graph
 :- dynamic graph/3.
-graph(G) :- graph(G, _, _).
+graph(Graph) :- graph(Graph, _Number_of_Vertices, _Number_of_Arcs).
+
 assert_graph(G) :- assert_graph(G, 0, 0).
-assert_graph(G, NVertices, NArcs) :- \+ graph(G), assert(graph(G, NVertices, NArcs)).
+assert_graph(G, NV, NA) :- \+ graph(G), assert(graph(G, NV, NA)).
 retract_graph(G) :- retract_graph(G, _, _).
 retract_graph(G, NV, NA) :- graph(G), retract(graph(G, NV, NA)), retractall(vertex(G,_,_)).
 update_graph(G, NVNew, NANew) :- graph(G, NV, NA),
@@ -69,22 +62,27 @@ update_graph(G) :- graph(G),
     graph_vertices(G, Vs), length(Vs, NV),
     graph_arcs(G, As), length(As, NA),
     update_graph(G, NV, NA).
+
 graph_vertex_add(G) :- graph(G, NV, NA), NVNew is NV+1, update_graph(G, NVNew, NA).
 graph_arc_add(G) :- graph(G, NV, NA), NANew is NA+1, update_graph(G, NV, NANew).
 graph_vertices_n(G, N) :- graph(G, N, _).
 graph_arcs_n(G, N) :- graph(G, _, N).
 
+%  vertex
 :- dynamic vertex/3.
-vertex(G, V) :- vertex(G, V, _).
+vertex(Graph, Vertex) :- vertex(Graph, Vertex, _List_of_couples_Weight-Vertex).
+
 assert_vertex(G, V) :- assert_vertex(G, V, []).
 assert_vertex(G, V, A) :- \+ vertex(G, V), assert(vertex(G, V, A)).
-    % retract_vertex(G, V). retract vertex
+%  retract_vertex(G, V). retract vertex + arcs including that vertex
 update_vertex(G, V, ANew) :- vertex(G, V, A),
     retract(vertex(G, V, A)), assert(vertex(G, V, ANew)).
 
+%  arc
 arc(G, U, V, W) :- vertex(G, U, A), member_first(W-V, A).
 arc_fluid(G, U, V, W) :- vertex(G, U, A), member(W-V, A).
 arc_single_fluid(G, U, V, W) :- vertex(G, U, A), member(W-V, A), U @< V.
+
 assert_arc(G, U, V, W) :- \+ arc(G, U, V, W), \+ arc(G, V, U, W),
     vertex(G, U, AU), vertex(G, V, AV),
     update_vertex(G, U, [ W-V | AU]), update_vertex(G, V, [ W-U | AV]).
@@ -96,16 +94,12 @@ update_arc(G, U, V, WNew) :- arc(G, U, V, W), arc(G, V, U, W),
     vertex(G, U, AU), vertex(G, V, AV),
     delete_first(AU, W-V, AUNew), delete_first(AV, W-U, AVNew),
     update_vertex(G, U, [ WNew-V | AUNew]), update_vertex(G, V, [ WNew-U | AVNew]).
+
 sort_vertex(G, V) :- vertex(G, V, A),
     sort(2, @=<, A, ANew), sort(1, =<, ANew, ANew2),
     update_vertex(G, V, ANew2).
 
-printlist([]) :- !.
-printlist([E | L]) :-
-    write(E), nl,
-    printlist(L).
-
-% generic_arcs ga(s)
+%  generic_arcs ga(s)
 add_from_ga(_, []) :- !.
 add_from_ga(G, [ga(V, U, W) | Gas]) :-
     new_vertex(G, V), new_vertex(G, U),
@@ -132,8 +126,11 @@ heap_insert(H, K, V) :- heap(H, 0), !, integer(K),
     assert_heap_entry(H, 1, K, V),
     heap_increment(H).
 
-heap_extract(H, K, V) :- heap(H), var(K), var(V), !,
-    heap_head(H, K, V), heap_extract(H, K, V).
+heap_extract(H, K, V) :- heap(H, S), var(K), var(V), !,
+    heap_head(H, K, V),
+    retract_heap_entry(H, 1, K, V), retract_heap_entry(H, S, K1, V1),
+    assert_heap_entry(H, 1, K1, V1),
+    heap_decrement(H), heapify(H, 1).
 heap_extract(H, K, V) :- heap(H, S), heap_entry(H, P, K, V),
     P < S, !,
     retract_heap_entry(H, P, K, V), retract_heap_entry(H, S, K1, V1),
@@ -157,20 +154,22 @@ heap_not_empty(H) :- heap(H, S), S > 0.
 heap_head(H, K, V) :- heap_entry(H, 1, K, V).
 
 % print
-list_heap(H) :- heap(H, _S), listing(heap_entry(H, _P, _K, _V)).
+list_heap(H) :- heap(H), listing(heap_entry(H, _P, _K, _V)).
 
 % support
+%  heap
 :- dynamic heap/2.
-heap(H) :- heap(H, _S).
+heap(Heap) :- heap(Heap, _Size).
 
 assert_heap(H) :- \+ heap(H), assert_heap(H, 0).
 assert_heap(H, S) :- \+ heap(H), S >= 0, assert(heap(H, S)).
 retract_heap(H) :- heap(H), retract(heap(H, _S)), retractall(heap_entry(H, _P, _K, _V)).
-update_heap(H, SNew) :- retract(heap(H, _S)), assert_heap(H, SNew).
+update_heap(H, SNew) :- heap(H, S), retract(heap(H, S)), assert_heap(H, SNew).
 
 heap_increment(H) :- heap(H, S), SNew is S+1, update_heap(H, SNew).
 heap_decrement(H) :- heap(H, S), SNew is S-1, update_heap(H, SNew).
 
+%  heap entry
 :- dynamic heap_entry/4.
 heap_entry(H, P, K) :- heap_entry(H, P, K, _V).
 
@@ -181,6 +180,7 @@ heap_entry_left(H, P, Pl) :- heap(H, S), P >= 1, P =< S, Pl is P*2, Pl =< S.
 heap_entry_right(H, P, Pr) :- heap(H, S), P >= 1, P =< S, Pr is P*2+1, Pr =< S.
 heap_entry_parent(H, P, Pp) :- heap(H, S), P >= 1, P =< S, Pp is floor(P/2), Pp >= 1.
 
+%  heapify
 swap_heap_entries(_H, P, P) :- !.
 swap_heap_entries(H, P1, P2) :-
     retract_heap_entry(H, P1, K1, V1),
@@ -268,6 +268,7 @@ vertex_key(M, V) :- vertex_key(M, V, _K).
 :- dynamic vertex_previous/3.
 
 % support
+%  mst
 :- dynamic mst/2.
 mst(M) :- mst(M, _Graph_size_minus_mst_size).
 
@@ -284,10 +285,32 @@ update_mst(M, SNew) :- retract(mst(M, _)), assert_mst(M, SNew).
 
 mst_increment(M) :- mst(M, S), SNew is S-1, update_mst(M, SNew).
 
+%  vertex previous
+new_vertex_previous(G, V, Prev) :- assert(vertex_previous(G, V, Prev)).
+
+%  vertex key
+new_vertex_key(G, V, K) :- vertex_key(G, V, K), !. % inutile, previsto dal caso 3
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld = inf, !,
+    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld =< K, !.
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), K < KOld, !,
+    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
+new_vertex_key(G, V, K) :- assert(vertex_key(G, V, K)).
+
+%  mst prim support
 mst_grow(G, U, V, W) :-
     new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
     mst_increment(G).
 
+heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
+heap_insert_arcs(_G, []) :- !.
+heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, V, _W],
+    vertex_key(G, V, _), !,
+    heap_insert_arcs(G, Ls).
+heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, _V, W],
+    heap_insert(G, W, A), heap_insert_arcs(G, Ls).
+
+%   clean
 :- dynamic prim_fail_n/1.
 increment_prim_fail_n :- prim_fail_n(X), !, XNew is X+1, update_prim_fail_n(XNew).
 increment_prim_fail_n :- update_prim_fail_n(1).
@@ -308,32 +331,27 @@ mst_clean_heap_entry(G, P, K, V) :-
     vertex_key(G, U), vertex_key(G, T),
     swap_heap_entries(G, S, P), retract_heap_entry(G, S, K, V), heap_decrement(G).
 
-new_vertex_previous(G, V, Prev) :- assert(vertex_previous(G, V, Prev)).
-
-new_vertex_key(G, V, K) :- vertex_key(G, V, K), !.
-new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld = inf, !,
-    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
-new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld =< K, !.
-new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), K < KOld, !,
-    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
-new_vertex_key(G, V, K) :- assert(vertex_key(G, V, K)).
-
-heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
-heap_insert_arcs(_G, []) :- !.
-heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, V, _W],
-    vertex_key(G, V, _), !,
-    % print('evitato l\'inseriemento di un arco interno'), nl,
-    heap_insert_arcs(G, Ls).
-heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, _V, W],
-    heap_insert(G, W, A), heap_insert_arcs(G, Ls).
-
+%   set non visited vertices (inf)
 mst_inf(G) :- findall(G-V, mst_excluded(G, V), L), mst_set_inf(L).
 mst_excluded(G, V) :- vertex(G, V), \+ vertex_key(G, V, _).
 mst_set_inf([]) :- !.
 mst_set_inf([G-V | L]) :- assert(vertex_key(G, V, inf)), mst_set_inf(L).
 
+%  mst get support
 mst_order_arcs(L, Ss) :- sort(3, @=<, L, S), sort(4, =<, S, Ss).
 
 mst_vertex_neighbors(G, Source, Arcs) :-
     findall(A, prev_to_arc(G, Source, A), Arcs).
 prev_to_arc(G, S, arc(G, S, U, W)) :- vertex_previous(G, U, S), arc_fluid(G, S, U, W).
+
+
+% general support
+delete_first([El | L1], El, L1) :- !.
+delete_first([E | L1], El, [E | L2]) :- delete_first(L1, El, L2).
+member_first(El, [El | _]) :- !.
+member_first(El, [_ | L]) :- member_first(El, L).
+
+printlist([]) :- !.
+printlist([E | L]) :-
+    write(E), nl,
+    printlist(L).
