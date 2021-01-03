@@ -96,7 +96,7 @@ update_arc(G, U, V, WNew) :- arc(G, U, V, W), arc(G, V, U, W),
     update_vertex(G, U, [ WNew-V | AUNew]), update_vertex(G, V, [ WNew-U | AVNew]).
 
 sort_vertex(G, V) :- vertex(G, V, A),
-    sort(2, @=<, A, ANew), sort(1, =<, ANew, ANew2),
+    sort(2, @=<, A, ANew), keysort(ANew, ANew2),
     update_vertex(G, V, ANew2).
 
 %  generic_arcs ga(s)
