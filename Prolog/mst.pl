@@ -136,13 +136,12 @@ new_graph(G) :- nonvar(G), assert_graph(G).
 
 delete_graph(G) :- retract_graph(G).
 
-new_vertex(G, V) :- maplist(nonvar, [G,V]), vertex(G, V), !.
-new_vertex(G, V) :- maplist(nonvar, [G,V]), assert_vertex(G, V), !, graph_vertex_add(G).
+new_vertex(G, V) :- nonvar(V), vertex(G, V), !.
+new_vertex(G, V) :- nonvar(V), assert_vertex(G, V), !, graph_vertex_add(G).
 
-new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), arc(G, U, V, W), !.
-new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), arc(G, U, V, _), !,
-    update_arc(G, U, V, W).
-new_arc(G, U, V, W) :- maplist(nonvar, [G,U,V,W]), assert_arc(G, U, V, W), !, graph_arc_add(G).
+new_arc(G, U, V, W) :- arc(G, U, V, W), !.
+new_arc(G, U, V, W) :- arc(G, U, V, _), !, number(W), W >= 0, update_arc(G, U, V, W).
+new_arc(G, U, V, W) :- number(W), W >= 0, assert_arc(G, U, V, W), graph_arc_add(G).
 new_arc(G, U, V) :- new_arc(G, U, V, 1).
 
 % reading
@@ -158,15 +157,15 @@ list_arcs(G) :- graph(G), graph_arcs(G, As), printlist(As).
 list_graph(G) :- graph(G), list_vertices(G), nl, list_arcs(G).
 
 % csv file
-read_graph(G, FileName) :-
+read_graph(G, FileName) :- nonvar(FileName), new_graph(G),
     csv_read_file(FileName, Rows,
         [separator(0'\t),
         functor(ga), arity(3)]),
-    new_graph(G), add_from_ga(G, Rows).
+    add_from_ga(G, Rows).
 
-write_graph(G, FileName, graph) :- graph_arcs(G, As),
+write_graph(G, FileName, graph) :- nonvar(G), graph_arcs(G, As),
     write_graph(As, FileName, edges), !.
-write_graph(As, FileName, edges) :-
+write_graph(As, FileName, edges) :- nonvar(As), nonvar(FileName),
     arcs_to_gas(As, Gas),
     csv_write_file(FileName, Gas,
         [separator(0'\t),
@@ -268,7 +267,7 @@ heap_extract(H, K, V) :- heap(H, S), heap_entry(H, P, K, V),
     retract_heap_entry(H, P, K, V),
     heap_decrement(H).
 
-modify_key(H, NewKey, OldKey, V) :- heap(H),
+modify_key(H, NewKey, OldKey, V) :- heap(H), nonvar(NewKey),
     retract_heap_entry(H, P, OldKey, V), assert_heap_entry(H, P, NewKey, V),
     heapify(H, P), heapify_up(H, P).
 

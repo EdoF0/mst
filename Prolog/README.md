@@ -118,19 +118,19 @@ Vero se Vs è la lista di tutti i vertici adiacenti al vertice V del grafo G.
 ```prolog
 list_vertices(G)
 ```
-Stampa i vertici del grafo G.
+Stampa i vertici del grafo G, fallisce se G non esiste.
 
 #### list_arcs
 ```prolog
 list_arcs(G)
 ```
-Stampa gli archi del grafo G.
+Stampa gli archi del grafo G, fallisce se G non esiste.
 
 #### list_graph
 ```prolog
 list_graph(G)
 ```
-Stampa i vertici e gli archi del grafo G.
+Stampa i vertici e gli archi del grafo G, fallisce se G non esiste.
 
 ### File csv
 
@@ -227,4 +227,4 @@ Vero se l'elemento minimo del minheap H è quello con chiave K e valore V.
 ```prolog
 list_heap(H)
 ```
-Stampa gli elementi del minheap H.
+Stampa gli elementi del minheap H, fallisce se H non esiste.
