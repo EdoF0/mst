@@ -27,8 +27,8 @@ Nota: durante la esecuzione è usato un heap nominato G, che verrà sovrascritto
 ```prolog
 mst_get(G, Source, PreorderTree)
 ```
-Vero quando PreorderTree è la lista degli archi MST generati con `mst_prim(G, Source)`.  
-PreorderTree è generata secondo una visita anticiapta (anche detta visita in preordine o pre-order tree trasversal) del MST ordinata secondo il peso dell'arco e, in caso di parità, in ordine lessicografico.
+Vero quando PreorderTree è la lista degli archi MST generati con `mst_prim(G, MSTSource)` a partire dal vertice source.  
+PreorderTree è generato secondo una visita anticiapta (anche detta visita in preordine o pre-order tree trasversal) del MST ordinata secondo il peso dell'arco e, in caso di parità, in ordine lessicografico.
 
 ### Dati
 
@@ -36,16 +36,16 @@ PreorderTree è generata secondo una visita anticiapta (anche detta visita in pr
 ```prolog
 vertex_key(G, V, K)
 ```
-Vero quando V fa parte del grafo G e K è il peso minimo di un arco di V appartente al MST di G.  
+Vero quando V fa parte del grafo G e K è il peso minimo di un arco entrante o uscente a V appartente al MST di G.  
 K vale `inf` se V non è parte del MST, succede solo nei grafi non connessi.  
-Viene valutato falso se V non è (ancora) parte del MST di G.
+Viene valutato falso durante la esecuzione della mst_prim se V non è ancora parte del MST di G.
 
 #### vertex_previous
 ```prolog
 vertex_previous(G, V, U)
 ```
 Vero quando V fa parte del grafo G e U è il genitore di V nel MST di G.  
-Viene valutato falso se V non è (ancora) parte del MST di G, oppure se V è la radice, oppure se V non fa parte della componente del grafo G connessa alla radice del MST di G.
+Viene valutato falso se V non è (ancora) parte del MST di G, oppure se V è la radice, oppure se V non fa parte della componente del grafo G connessa alla radice del MST.
 
 ***
 
@@ -78,7 +78,7 @@ Fallisce se non esiste G, oppure V è una variabile.
 new_arc(G, U, V, W)
 new_arc(G, U, V) ≡ new_arc(G, U, V, 1)
 ```
-Crea un nuovo arco da U a V con peso W nel grafo G se non esiste già.  
+Crea un nuovo arco da U a V con peso W nel grafo G.  
 Fallisce se non esiste G o U o V, oppure se W non è un numero non negativo (sono accettati numeri razionali).  
 Creare un arco già esistente con peso diverso sovrascrive quello precedente.
 
@@ -164,7 +164,7 @@ Tutte le operazioni di modifica includono la riorganizzazione interna della stru
 #### new_heap
 ```prolog
 new_heap(H)
-````
+```
 Crea un nuovo minheap H, se H esiste già viene sovrascritto. Fallisce se H è una variabile.
 
 #### delete_heap
