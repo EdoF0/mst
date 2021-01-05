@@ -1,5 +1,132 @@
 
 
+% mst
+
+
+% execution
+mst_prim(G, Source) :- new_mst(G), vertex(G, Source),
+    new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_increment(G),
+    mst_prim(G), mst_inf(G).
+mst_prim(G) :- mst_complete(G), !.
+mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
+    vertex_key(G, U, _), vertex_key(G, V, _), !,
+    heap_extract(G, W, A),
+    increment_prim_fail_n, mst_clean_heap_cond(G),
+    mst_prim(G).
+mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
+    vertex_key(G, U, _), !, mst_grow(G, U, V, W),
+    heap_extract(G, W, A), heap_add_arcs(G, V),
+    reset_prim_fail_n, mst_prim(G).
+mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
+    vertex_key(G, V, _), !, mst_grow(G, V, U, W),
+    heap_extract(G, W, A), heap_add_arcs(G, U),
+    reset_prim_fail_n, mst_prim(G).
+mst_prim(G) :- heap_empty(G).
+
+mst_get(G, Source, []) :- mst_vertex_neighbors(G, Source, []), !.
+mst_get(G, Source, PreorderTree) :-
+    mst_vertex_neighbors(G, Source, Arcs),
+    mst_order_arcs(Arcs, OArcs),
+    mst_get(G, Source, OArcs, PreorderTree).
+mst_get(G, Source, [ Arc | Arcs], [Arc | PreorderTree]) :-
+    Arc =.. [arc, G, Source, V, _W], !,
+    mst_get(G, V, PreorderTreeChild),
+    mst_get(G, Source, Arcs, PreorderTreeRest),
+    append(PreorderTreeChild, PreorderTreeRest, PreorderTree).
+mst_get(G, Source, [ Arc | Arcs], [Arc | PreorderTree]) :-
+    Arc =.. [arc, G, U, Source, _W], !,
+    mst_get(G, U, PreorderTreeChild),
+    mst_get(G, Source, Arcs, PreorderTreeRest),
+    append(PreorderTreeChild, PreorderTreeRest, PreorderTree).
+mst_get(_G, _Source, [], []) :- !.
+
+% data
+:- dynamic vertex_key/3.
+vertex_key(M, V) :- vertex_key(M, V, _K).
+:- dynamic vertex_previous/3.
+
+% support
+%  mst
+:- dynamic mst/2.
+mst(M) :- mst(M, _Graph_size_minus_mst_size).
+
+new_mst(M) :- graph(M), mst(M), !, delete_mst(M), assert_mst(M), new_heap(M).
+new_mst(M) :- graph(M), assert_mst(M), new_heap(M).
+delete_mst(M) :- delete_heap(M), !, retract_mst(M).
+delete_mst(M) :- retract_mst(M).
+
+assert_mst(M) :- assert_mst(M, 0).
+assert_mst(M, S) :- \+ mst(M), assert(mst(M, S)).
+retract_mst(M) :- mst(M), retract(mst(M, _)),
+    retractall(vertex_previous(M, _V, _U)), retractall(vertex_key(M, _V2, _K)).
+update_mst(M, SNew) :- retract(mst(M, _)), assert_mst(M, SNew).
+
+mst_complete(M) :- mst(M, S), graph_vertices_n(M, S).
+mst_increment(M) :- mst(M, S), SNew is S+1, update_mst(M, SNew).
+mst_vertices_n(M, N) :- mst(M, N).
+mst_arcs_n(M, N) :- mst(M, VN), N is VN-1.
+
+%  vertex previous
+new_vertex_previous(G, V, Prev) :- assert(vertex_previous(G, V, Prev)).
+
+%  vertex key
+new_vertex_key(G, V, K) :- vertex_key(G, V, K), !. % inutile, previsto dal caso 3
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld = inf, !,
+    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld =< K, !.
+new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), K < KOld, !,
+    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
+new_vertex_key(G, V, K) :- assert(vertex_key(G, V, K)).
+
+%  mst prim support
+mst_grow(G, U, V, W) :-
+    new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
+    mst_increment(G).
+
+heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
+heap_insert_arcs(_G, []) :- !.
+heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, V, _W],
+    vertex_key(G, V, _), !,
+    heap_insert_arcs(G, Ls).
+heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, _V, W],
+    heap_insert(G, W, A), heap_insert_arcs(G, Ls).
+
+%   clean
+:- dynamic prim_fail_n/1.
+increment_prim_fail_n :- prim_fail_n(X), !, XNew is X+1, update_prim_fail_n(XNew).
+increment_prim_fail_n :- update_prim_fail_n(1).
+reset_prim_fail_n :- prim_fail_n(0).
+reset_prim_fail_n :- update_prim_fail_n(0).
+update_prim_fail_n(X) :- retract(prim_fail_n(_)), !, asserta(prim_fail_n(X)).
+update_prim_fail_n(X) :- asserta(prim_fail_n(X)).
+
+mst_clean_heap_cond(G) :- prim_fail_n(X), X > 6, !, mst_clean_heap(G).
+mst_clean_heap_cond(_G).
+mst_clean_heap(G) :- heap(G, S), mst_clean_heap(G, S), buildheap(G).
+mst_clean_heap(_G, 0) :- !.
+mst_clean_heap(G, N) :- mst_clean_heap_entry(G, N, _K, _V), !,
+    NNew is N-1, mst_clean_heap(G, NNew).
+mst_clean_heap(G, N) :- NNew is N-1, mst_clean_heap(G, NNew).
+mst_clean_heap_entry(G, P, K, V) :-
+    heap(G, S), heap_entry(G, P, K, V), V =.. [arc, G, U, T, _W],
+    vertex_key(G, U), vertex_key(G, T),
+    swap_heap_entries(G, S, P), retract_heap_entry(G, S, K, V), heap_decrement(G).
+
+%   set non visited vertices (inf)
+mst_inf(G) :- mst_complete(G), !.
+mst_inf(G) :- findall(G-V, mst_excluded(G, V), L), mst_set_inf(L).
+mst_excluded(G, V) :- vertex(G, V), \+ vertex_key(G, V, _).
+mst_set_inf([]) :- !.
+mst_set_inf([G-V | L]) :- assert(vertex_key(G, V, inf)), mst_set_inf(L).
+
+%  mst get support
+mst_order_arcs(L, Ss) :- sort(3, @=<, L, S), sort(4, =<, S, Ss).
+
+mst_vertex_neighbors(G, Source, Arcs) :-
+    findall(A, prev_to_arc(G, Source, A), Arcs).
+prev_to_arc(G, S, arc(G, S, U, W)) :- vertex_previous(G, U, S), arc_fluid(G, S, U, W).
+
+
 % graph
 
 
@@ -220,133 +347,6 @@ heapify(H, P) :- heap(H, S), Not_leaves is floor(S/2)+1, P >= Not_leaves, !.
 buildheap(H) :- heap(H, S), Sn is floor(S/2), buildheap(H, Sn).
 buildheap(_H, 0) :- !.
 buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
-
-
-% mst
-
-
-% execution
-mst_prim(G, Source) :- new_mst(G), vertex(G, Source),
-    new_vertex_key(G, Source, inf), heap_add_arcs(G, Source), mst_increment(G),
-    mst_prim(G), mst_inf(G).
-mst_prim(G) :- mst_complete(G), !.
-mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, U, _), vertex_key(G, V, _), !,
-    heap_extract(G, W, A),
-    increment_prim_fail_n, mst_clean_heap_cond(G),
-    mst_prim(G).
-mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, U, _), !, mst_grow(G, U, V, W),
-    heap_extract(G, W, A), heap_add_arcs(G, V),
-    reset_prim_fail_n, mst_prim(G).
-mst_prim(G) :- heap_head(G, W, A), A =.. [arc, G, U, V, W],
-    vertex_key(G, V, _), !, mst_grow(G, V, U, W),
-    heap_extract(G, W, A), heap_add_arcs(G, U),
-    reset_prim_fail_n, mst_prim(G).
-mst_prim(G) :- heap_empty(G).
-
-mst_get(G, Source, []) :- mst_vertex_neighbors(G, Source, []), !.
-mst_get(G, Source, PreorderTree) :-
-    mst_vertex_neighbors(G, Source, Arcs),
-    mst_order_arcs(Arcs, OArcs),
-    mst_get(G, Source, OArcs, PreorderTree).
-mst_get(G, Source, [ Arc | Arcs], [Arc | PreorderTree]) :-
-    Arc =.. [arc, G, Source, V, _W], !,
-    mst_get(G, V, PreorderTreeChild),
-    mst_get(G, Source, Arcs, PreorderTreeRest),
-    append(PreorderTreeChild, PreorderTreeRest, PreorderTree).
-mst_get(G, Source, [ Arc | Arcs], [Arc | PreorderTree]) :-
-    Arc =.. [arc, G, U, Source, _W], !,
-    mst_get(G, U, PreorderTreeChild),
-    mst_get(G, Source, Arcs, PreorderTreeRest),
-    append(PreorderTreeChild, PreorderTreeRest, PreorderTree).
-mst_get(_G, _Source, [], []) :- !.
-
-% data
-:- dynamic vertex_key/3.
-vertex_key(M, V) :- vertex_key(M, V, _K).
-:- dynamic vertex_previous/3.
-
-% support
-%  mst
-:- dynamic mst/2.
-mst(M) :- mst(M, _Graph_size_minus_mst_size).
-
-new_mst(M) :- graph(M), mst(M), !, delete_mst(M), assert_mst(M), new_heap(M).
-new_mst(M) :- graph(M), assert_mst(M), new_heap(M).
-delete_mst(M) :- delete_heap(M), !, retract_mst(M).
-delete_mst(M) :- retract_mst(M).
-
-assert_mst(M) :- assert_mst(M, 0).
-assert_mst(M, S) :- \+ mst(M), assert(mst(M, S)).
-retract_mst(M) :- mst(M), retract(mst(M, _)),
-    retractall(vertex_previous(M, _V, _U)), retractall(vertex_key(M, _V2, _K)).
-update_mst(M, SNew) :- retract(mst(M, _)), assert_mst(M, SNew).
-
-mst_complete(M) :- mst(M, S), graph_vertices_n(M, S).
-mst_increment(M) :- mst(M, S), SNew is S+1, update_mst(M, SNew).
-mst_vertices_n(M, N) :- mst(M, N).
-mst_arcs_n(M, N) :- mst(M, VN), N is VN-1.
-
-%  vertex previous
-new_vertex_previous(G, V, Prev) :- assert(vertex_previous(G, V, Prev)).
-
-%  vertex key
-new_vertex_key(G, V, K) :- vertex_key(G, V, K), !. % inutile, previsto dal caso 3
-new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld = inf, !,
-    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
-new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), KOld =< K, !.
-new_vertex_key(G, V, K) :- vertex_key(G, V, KOld), K < KOld, !,
-    retract(vertex_key(G, V, KOld)), assert(vertex_key(G, V, K)).
-new_vertex_key(G, V, K) :- assert(vertex_key(G, V, K)).
-
-%  mst prim support
-mst_grow(G, U, V, W) :-
-    new_vertex_key(G, V, W), new_vertex_previous(G, V, U), new_vertex_key(G, U, W),
-    mst_increment(G).
-
-heap_add_arcs(G, V) :- vertex_neighbors(G, V, Ns), heap_insert_arcs(G, Ns).
-heap_insert_arcs(_G, []) :- !.
-heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, V, _W],
-    vertex_key(G, V, _), !,
-    heap_insert_arcs(G, Ls).
-heap_insert_arcs(G, [A | Ls]) :- A =.. [arc, G, _U, _V, W],
-    heap_insert(G, W, A), heap_insert_arcs(G, Ls).
-
-%   clean
-:- dynamic prim_fail_n/1.
-increment_prim_fail_n :- prim_fail_n(X), !, XNew is X+1, update_prim_fail_n(XNew).
-increment_prim_fail_n :- update_prim_fail_n(1).
-reset_prim_fail_n :- prim_fail_n(0).
-reset_prim_fail_n :- update_prim_fail_n(0).
-update_prim_fail_n(X) :- retract(prim_fail_n(_)), !, asserta(prim_fail_n(X)).
-update_prim_fail_n(X) :- asserta(prim_fail_n(X)).
-
-mst_clean_heap_cond(G) :- prim_fail_n(X), X > 6, !, mst_clean_heap(G).
-mst_clean_heap_cond(_G).
-mst_clean_heap(G) :- heap(G, S), mst_clean_heap(G, S), buildheap(G).
-mst_clean_heap(_G, 0) :- !.
-mst_clean_heap(G, N) :- mst_clean_heap_entry(G, N, _K, _V), !,
-    NNew is N-1, mst_clean_heap(G, NNew).
-mst_clean_heap(G, N) :- NNew is N-1, mst_clean_heap(G, NNew).
-mst_clean_heap_entry(G, P, K, V) :-
-    heap(G, S), heap_entry(G, P, K, V), V =.. [arc, G, U, T, _W],
-    vertex_key(G, U), vertex_key(G, T),
-    swap_heap_entries(G, S, P), retract_heap_entry(G, S, K, V), heap_decrement(G).
-
-%   set non visited vertices (inf)
-mst_inf(G) :- mst_complete(G), !.
-mst_inf(G) :- findall(G-V, mst_excluded(G, V), L), mst_set_inf(L).
-mst_excluded(G, V) :- vertex(G, V), \+ vertex_key(G, V, _).
-mst_set_inf([]) :- !.
-mst_set_inf([G-V | L]) :- assert(vertex_key(G, V, inf)), mst_set_inf(L).
-
-%  mst get support
-mst_order_arcs(L, Ss) :- sort(3, @=<, L, S), sort(4, =<, S, Ss).
-
-mst_vertex_neighbors(G, Source, Arcs) :-
-    findall(A, prev_to_arc(G, Source, A), Arcs).
-prev_to_arc(G, S, arc(G, S, U, W)) :- vertex_previous(G, U, S), arc_fluid(G, S, U, W).
 
 
 % general support
