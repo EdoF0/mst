@@ -246,10 +246,10 @@ new_heap(H) :- nonvar(H), assert_heap(H), !.
 
 delete_heap(H) :- retract_heap(H).
 
-heap_insert(H, K, V) :- heap(H, S), S > 0, !, integer(K),
+heap_insert(H, K, V) :- heap(H, S), S > 0, !, nonvar(V), number(K),
     P is S+1, assert_heap_entry(H, P, K, V),
     heap_increment(H), heapify_up(H, P).
-heap_insert(H, K, V) :- heap(H, 0), !, integer(K),
+heap_insert(H, K, V) :- heap(H, 0), !, nonvar(V), number(K),
     assert_heap_entry(H, 1, K, V),
     heap_increment(H).
 
