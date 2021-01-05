@@ -319,10 +319,10 @@ increment_prim_fail_n :- prim_fail_n(X), !, XNew is X+1, update_prim_fail_n(XNew
 increment_prim_fail_n :- update_prim_fail_n(1).
 reset_prim_fail_n :- prim_fail_n(0).
 reset_prim_fail_n :- update_prim_fail_n(0).
-update_prim_fail_n(X) :- retract(prim_fail_n(_)), !, assert(prim_fail_n(X)).
-update_prim_fail_n(X) :- assert(prim_fail_n(X)).
+update_prim_fail_n(X) :- retract(prim_fail_n(_)), !, asserta(prim_fail_n(X)).
+update_prim_fail_n(X) :- asserta(prim_fail_n(X)).
 
-mst_clean_heap_cond(G) :- prim_fail_n(X), X>6, !, mst_clean_heap(G).
+mst_clean_heap_cond(G) :- prim_fail_n(X), X > 6, !, mst_clean_heap(G).
 mst_clean_heap_cond(_G).
 mst_clean_heap(G) :- heap(G, S), mst_clean_heap(G, S), buildheap(G).
 mst_clean_heap(_G, 0) :- !.
