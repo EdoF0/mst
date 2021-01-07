@@ -4,8 +4,17 @@
 
 
 ;  hashtables
+;  now: (graph-id vertex-id) -> T
+;  next: same
+;  hashtable per ogni grafo?
 (defparameter *visited* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
+;  now: (graph-id vertex-id) -> weight
+;  next: same
+;  hashtable per ogni grafo?
 (defparameter *vertex-keys* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
+;  now: (graph-id child) -> parent
+;  next: same
+;  hashtable per ogni grafo?
 (defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 
 ;  esecuzione
@@ -120,8 +129,16 @@
 
 
 ; hashtables
+;  now: graph-id -> graph-id
+;  next: graph-id -> (number-of-vertices number-of-arcs)
 (defparameter *graphs* (make-hash-table :test #'equal :size 10 :rehash-size 1))
+;  now: ('vertex graph-id vertex-id) -> ('vertex graph-id vertex-id)
+;  next: (graph-id vertex-id) -> T
+;  hashtable per ogni grafo?
 (defparameter *vertices* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
+;  now: ('arc graph-id vertexS-id vertexT-id) -> ('arc graph-id vertexS-id vertexT-id weight)
+;  next: (graph-id vertexS-id vertexT-id) -> weight
+;  hashtable per ogni grafo?
 (defparameter *arcs* (make-hash-table :test #'equal :size 100000 :rehash-size 100000))
 
 ;  creazione e modifica
@@ -234,6 +251,8 @@
 
 
 ;  hashtables
+;  now: heap-id -> ('heap heap-id last-element array))
+;  next: the same
 (defparameter *heaps* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  creazione e modifica
