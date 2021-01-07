@@ -1,4 +1,3 @@
-;;creazione hash-tables
 (defparameter *vertices* (make-hash-table :test #' equal))
 (defparameter *arcs* (make-hash-table :test #' equal))
 (defparameter *graphs* (make-hash-table :test #' equal))
@@ -8,9 +7,118 @@
 (defparameter *heaps* (make-hash-table :test #' equal))
 
 
-;GRAFI
-;;  Creazione e modifica
+; mst
 
+
+;  esecuzione
+(defun mst-prim (graph-id source) 
+  (cond ((not (null (vertex-in-graph graph-id source))) 
+      (progn 
+        (delete-mst graph-id)
+        (new-heap graph-id (length (graph-arcs graph-id)))
+        (new-vertex-key graph-id source most-positive-double-float)
+        (new-vertex-visited graph-id source)
+        (heap-add-arcs graph-id source)
+        (mst-recursive graph-id)
+        nil))))
+
+(defun mst-get (graph-id source)
+  (mst-get-floor graph-id source 
+                 (mst-order-arcs 
+                  (mst-vertex-neighbors graph-id source))))
+
+;  dati
+(defun mst-vertex-key (graph-id vertex-id) 
+  (or (gethash (list graph-id vertex-id) *vertex-keys*) most-positive-double-float))
+
+(defun mst-previous (graph-id vertex-id)
+  (gethash (list graph-id vertex-id) *previous*))
+
+;  supporto
+(defun delete-mst (graph-id)
+  (maphash (lambda (key val) (if (strn= (first key) graph-id) (remhash key *vertex-keys*))) *vertex-keys*)
+  (maphash (lambda (key val) (if (strn= (first key) graph-id) (remhash key *previous*))) *previous*)
+  (maphash (lambda (key val) (if (strn= (first key) graph-id) (remhash key *visited*))) *visited*))
+
+(defun mst-recursive (graph-id)
+  (let ((head (heap-extract graph-id)))
+    (if (null head)
+        t
+      (let ((arc (second head)))
+        (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc))) 
+          (cond ((null arc) (write 'casobase))
+                ((and (is-visited graph-id from) (is-visited graph-id to)) 
+                 (mst-recursive graph-id))
+                ((is-visited graph-id from) 
+                 (progn (mst-grow graph-id from to weight) 
+                   (heap-add-arcs graph-id to) (mst-recursive graph-id)))
+                ((is-visited graph-id to) 
+                 (progn (mst-grow graph-id to from weight) 
+                   (heap-add-arcs graph-id from) (mst-recursive graph-id)))))))))
+
+(defun mst-grow (graph-id from to weight)
+  (new-vertex-key graph-id to weight)
+  (new-vertex-previous graph-id from to)
+  (new-vertex-key graph-id from weight)
+  (new-vertex-visited graph-id to))
+
+(defun mst-get-floor (graph-id source ordered-arcs)
+  (if (null ordered-arcs)
+      nil
+    (let ((from (third (first ordered-arcs))) (to (fourth (first ordered-arcs))))
+      (if (strn= from source)
+          (append 
+           (list (first ordered-arcs))
+           (mst-get graph-id to) 
+           (mst-get-floor graph-id source (cdr ordered-arcs)))
+        (append 
+         (list (first ordered-arcs))
+         (mst-get graph-id from) 
+         (mst-get-floor graph-id source (cdr ordered-arcs)))))))
+
+(defun mst-vertex-neighbors (graph-id parent)
+  (let ((children ()) (arcs ()))
+    (maphash (lambda (key val) 
+               (if (strn= val parent)
+                   (push (second key) children)))
+             *previous*)
+    (mapcar (lambda (child) 
+              (push (beautify-arc 
+                     (or (gethash (list 'arc graph-id parent child) *arcs*) 
+                         (gethash (list 'arc graph-id child parent) *arcs*)) 
+                     parent) arcs))
+            children)
+    arcs))
+
+(defun mst-order-arcs (arcs)
+  (sort arcs #'strn< :key #'fourth)
+  (stable-sort arcs #'< :key #'fifth)
+  arcs)
+
+(defun is-visited (graph-id vertex-id) 
+  (gethash (list graph-id vertex-id) *visited*))
+
+(defun new-vertex-key (graph-id vertex-id weight)
+  (let ((old-weight (mst-vertex-key graph-id vertex-id))) 
+    (cond ((> old-weight weight) 
+           (setf (gethash (list graph-id vertex-id) *vertex-keys*) weight))) T))
+
+(defun new-vertex-visited (graph-id vertex-id)
+  (setf (gethash (list graph-id vertex-id) *visited*) T))
+
+(defun new-vertex-previous (graph-id parent child)
+  (setf (gethash (list graph-id child) *previous*) parent))
+
+(defun heap-add-arcs (graph-id vertex-id)
+ (mapcar (lambda (arc) (heap-insert graph-id (fifth arc) arc)) 
+         (graph-vertex-neighbors graph-id vertex-id))
+ T)
+
+
+; grafi
+
+
+;  creazione e modifica
 (defun new-graph (graph-id)
   (delete-graph graph-id)
   (setf (gethash graph-id *graphs*) graph-id))
@@ -42,8 +150,7 @@
       (setf (gethash (list 'arc graph-id vertexS-id vertexT-id) *arcs*)
             (list 'arc graph-id vertexS-id vertexT-id weight))))
 
-;;  Lettura
-
+;  lettura
 (defun graph-vertices (graph-id)
   (let ((vertices  ()))  
     (maphash (lambda (key val)
@@ -92,21 +199,17 @@
             arcs)
     vertices))
 
-
-;; Stampa
-
+;  stampa
 (defun graph-print (graph-id)
   (format t "VERTICI:~%") 
   (list-vertices graph-id)
   (format t "~%ARCHI:~%")
   (list-arcs graph-id))
 
-;;  Supporto
-
+;  supporto
 (defun beautify-arc (arc parent)
   (cond ((strn= (third arc) parent) arc) 
         (T (list 'arc (second arc) parent (third arc) (fifth arc)))))
-
 
 (defun list-vertices (graph-id)
   (maphash (lambda (key val)
@@ -127,9 +230,11 @@
   (is-graph graph-id)
   (gethash (list 'vertex graph-id vertex-id) *vertices*)))
 
-;MinHeap
-;;  Creazione e mofica
 
+; minheap
+
+
+;  creazione e modifica
 (defun new-heap (heap-id &optional (capacity 42))
       (setf (gethash heap-id *heaps*)
             (list 'heap heap-id 0 (make-array capacity)))
@@ -165,9 +270,7 @@
           head)
         ()))))
 
-
-;;  Lettura
-
+;  lettura
 (defun heap-empty (heap-id)
   (let ((size (heap-size heap-id)))
     (if size (zerop size))))
@@ -181,8 +284,7 @@
   (gethash heap-id *heaps*)
   (aref (heap-actual-heap heap-id) 0)))
 
-;;  Stampa
-
+;  stampa
 (defun heap-print (heap-id)
   (if (null (heap-size heap-id))
       nil
@@ -191,9 +293,7 @@
          (heap-size heap-id) (heap-actual-heap heap-id)) 
      T)))
 
-;;  Supporto
-
-
+;  supporto
 (defun heap-size (heap-id)
   (and (gethash heap-id *heaps*)
   (third (gethash heap-id *heaps*))))
@@ -258,138 +358,10 @@
          heap-id (parent current))))))
 
 
+; supporto generico
 
 
-;MST
-
-;;  Esecuzione
-(defun mst-prim (graph-id source) 
-  (cond ((not (null (vertex-in-graph graph-id source))) 
-      (progn 
-        (delete-mst graph-id)
-        (new-heap graph-id (length (graph-arcs graph-id)))
-        (new-vertex-key graph-id source most-positive-double-float)
-        (new-vertex-visited graph-id source)
-        (heap-add-arcs graph-id source)
-        (mst-recursive graph-id)
-        nil))))
-
-(defun mst-get (graph-id source)
-  (mst-get-floor graph-id source 
-                 (mst-order-arcs 
-                  (mst-vertex-neighbors graph-id source))))
-
-;;  Dati
-
-(defun mst-vertex-key (graph-id vertex-id) 
-  (or (gethash (list graph-id vertex-id) *vertex-keys*) most-positive-double-float))
-
-(defun mst-previous (graph-id vertex-id)
-  (gethash (list graph-id vertex-id) *previous*))
-
-;; Supporto
-
-
-(defun delete-mst (graph-id)
-  (maphash (lambda (key val) (if (strn= (first key) graph-id) (remhash key *vertex-keys*))) *vertex-keys*)
-  (maphash (lambda (key val) (if (strn= (first key) graph-id) (remhash key *previous*))) *previous*)
-  (maphash (lambda (key val) (if (strn= (first key) graph-id) (remhash key *visited*))) *visited*))
-
-
-
-
-(defun mst-recursive (graph-id)
-  (let ((head (heap-extract graph-id)))
-    (if (null head)
-        t
-      (let ((arc (second head)))
-        (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc))) 
-          (cond ((null arc) (write 'casobase))
-                ((and (is-visited graph-id from) (is-visited graph-id to)) 
-                 (mst-recursive graph-id))
-                ((is-visited graph-id from) 
-                 (progn (mst-grow graph-id from to weight) 
-                   (heap-add-arcs graph-id to) (mst-recursive graph-id)))
-                ((is-visited graph-id to) 
-                 (progn (mst-grow graph-id to from weight) 
-                   (heap-add-arcs graph-id from) (mst-recursive graph-id)))))))))
-
-
-
-(defun mst-grow (graph-id from to weight)
-  (new-vertex-key graph-id to weight)
-  (new-vertex-previous graph-id from to)
-  (new-vertex-key graph-id from weight)
-  (new-vertex-visited graph-id to))
-
-
-
- 
-(defun mst-get-floor (graph-id source ordered-arcs)
-  (if (null ordered-arcs)
-      nil
-    (let ((from (third (first ordered-arcs))) (to (fourth (first ordered-arcs))))
-      (if (strn= from source)
-          (append 
-           (list (first ordered-arcs))
-           (mst-get graph-id to) 
-           (mst-get-floor graph-id source (cdr ordered-arcs)))
-        (append 
-         (list (first ordered-arcs))
-         (mst-get graph-id from) 
-         (mst-get-floor graph-id source (cdr ordered-arcs)))))))
-
-
-(defun mst-vertex-neighbors (graph-id parent)
-  (let ((children ()) (arcs ()))
-    (maphash (lambda (key val) 
-               (if (strn= val parent)
-                   (push (second key) children)))
-             *previous*)
-    (mapcar (lambda (child) 
-              (push (beautify-arc 
-                     (or (gethash (list 'arc graph-id parent child) *arcs*) 
-                         (gethash (list 'arc graph-id child parent) *arcs*)) 
-                     parent) arcs))
-            children)
-    arcs))
-
-
-
-
-
-(defun mst-order-arcs (arcs)
-  (sort arcs #'strn< :key #'fourth)
-  (stable-sort arcs #'< :key #'fifth)
-  arcs)
-
-
-
-
-(defun is-visited (graph-id vertex-id) 
-  (gethash (list graph-id vertex-id) *visited*))
-
-(defun new-vertex-key (graph-id vertex-id weight)
-  (let ((old-weight (mst-vertex-key graph-id vertex-id))) 
-    (cond ((> old-weight weight) 
-           (setf (gethash (list graph-id vertex-id) *vertex-keys*) weight))) T))
-
-(defun new-vertex-visited (graph-id vertex-id)
-  (setf (gethash (list graph-id vertex-id) *visited*) T))
-
-(defun new-vertex-previous (graph-id parent child)
-  (setf (gethash (list graph-id child) *previous*) parent))
-
-
-(defun heap-add-arcs (graph-id vertex-id)
- (mapcar (lambda (arc) (heap-insert graph-id (fifth arc) arc)) 
-         (graph-vertex-neighbors graph-id vertex-id))
- T)
-
-; Funzioni di supporto generiche
-
-(defun strn= (val1 val2) 
-         (string= (write-to-string val1) (write-to-string val2)))
-
+(defun strn= (val1 val2)
+    (string= (write-to-string val1) (write-to-string val2)))
 (defun strn< (val1 val2)
-   (string< (write-to-string val1) (write-to-string val2)))
+    (string< (write-to-string val1) (write-to-string val2)))
