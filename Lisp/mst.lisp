@@ -111,13 +111,13 @@
 (defun new-vertex-key (graph-id vertex-id weight)
   (let ((old-weight (mst-vertex-key graph-id vertex-id)))
     (cond ((> old-weight weight)
-           (setf (gethash (list graph-id vertex-id) *vertex-keys*) weight))) T))
+           (hashtable-insert (list graph-id vertex-id) weight *vertex-keys*))) T))
 
 (defun new-vertex-visited (graph-id vertex-id)
-  (setf (gethash (list graph-id vertex-id) *visited*) T))
+  (hashtable-insert (list graph-id vertex-id) T *visited*))
 
 (defun new-vertex-previous (graph-id parent child)
-  (setf (gethash (list graph-id child) *previous*) parent))
+  (hashtable-insert (list graph-id child) parent *previous*))
 
 (defun heap-add-arcs (graph-id vertex-id)
   (mapcar (lambda (arc) (heap-insert graph-id (fifth arc) arc))
@@ -144,7 +144,7 @@
 ;  creazione e modifica
 (defun new-graph (graph-id)
   (delete-graph graph-id)
-  (setf (gethash graph-id *graphs*) graph-id))
+  (hashtable-insert graph-id graph-id *graphs*))
 
 (defun delete-graph (graph-id)
   (maphash (lambda (key val) (if (strn= (second key) graph-id)
@@ -162,15 +162,13 @@
 (defun new-vertex (graph-id vertex-id)
   (and 
    (is-graph graph-id)
-   (setf (gethash (list 'vertex graph-id vertex-id) *vertices*)
-         (list 'vertex graph-id vertex-id))))
+   (hashtable-insert (list 'vertex graph-id vertex-id) (list 'vertex graph-id vertex-id) *vertices*)))
 
 (defun new-arc (graph-id vertexS-id vertexT-id &optional (weight 1))
   (and 
    (vertex-in-graph graph-id vertexS-id)
    (vertex-in-graph graph-id vertexT-id)
-   (setf (gethash (list 'arc graph-id vertexS-id vertexT-id) *arcs*)
-         (list 'arc graph-id vertexS-id vertexT-id weight))))
+   (hashtable-insert (list 'arc graph-id vertexS-id vertexT-id) (list 'arc graph-id vertexS-id vertexT-id weight) *arcs*)))
 
 ;  lettura
 (defun graph-vertices (graph-id)
@@ -257,8 +255,7 @@
 
 ;  creazione e modifica
 (defun new-heap (heap-id &optional (capacity 42))
-  (setf (gethash heap-id *heaps*)
-        (list 'heap heap-id 0 (make-array capacity))))
+  (hashtable-insert heap-id (list 'heap heap-id 0 (make-array capacity)) *heaps*))
 
 (defun heap-delete (heap-id)
   (remhash heap-id *heaps*) T)
