@@ -1,14 +1,12 @@
-(defparameter *vertices* (make-hash-table :test #' equal))
-(defparameter *arcs* (make-hash-table :test #' equal))
-(defparameter *graphs* (make-hash-table :test #' equal))
-(defparameter *visited* (make-hash-table :test #' equal))
-(defparameter *vertex-keys* (make-hash-table :test #' equal))
-(defparameter *previous* (make-hash-table :test #' equal))
-(defparameter *heaps* (make-hash-table :test #' equal))
 
 
 ; mst
 
+
+;  hashtables
+(defparameter *visited* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
+(defparameter *vertex-keys* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
+(defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 
 ;  esecuzione
 (defun mst-prim (graph-id source)
@@ -121,6 +119,11 @@
 ; grafi
 
 
+; hashtables
+(defparameter *graphs* (make-hash-table :test #'equal :size 10 :rehash-size 1))
+(defparameter *vertices* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
+(defparameter *arcs* (make-hash-table :test #'equal :size 100000 :rehash-size 100000))
+
 ;  creazione e modifica
 (defun new-graph (graph-id)
   (delete-graph graph-id)
@@ -229,6 +232,9 @@
 
 ; minheap
 
+
+;  hashtables
+(defparameter *heaps* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  creazione e modifica
 (defun new-heap (heap-id &optional (capacity 42))
@@ -355,3 +361,6 @@
   (string= (write-to-string val1) (write-to-string val2)))
 (defun strn< (val1 val2)
   (string< (write-to-string val1) (write-to-string val2)))
+
+(defun hashtable-insert (key value hashtable)
+  (setf (gethash key hashtable) value))
