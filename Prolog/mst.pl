@@ -347,7 +347,7 @@ buildheap(_H, 0) :- !.
 buildheap(H, S) :- heapify(H, S), Sn is S-1, buildheap(H, Sn).
 
 
-% general support
+% supporto generico
 
 
 delete_first([El | L1], El, L1) :- !.
