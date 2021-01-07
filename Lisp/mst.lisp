@@ -233,7 +233,7 @@
 ;  creazione e modifica
 (defun new-heap (heap-id &optional (capacity 42))
   (setf (gethash heap-id *heaps*)
-        (list 'heap heap-id 0 (make-array capacity)))
+        (list 'heap heap-id 0 (make-array capacity))))
 
 (defun heap-delete (heap-id)
   (remhash heap-id *heaps*) T)
