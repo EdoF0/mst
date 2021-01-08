@@ -48,7 +48,7 @@ vertex_key(M, V) :- vertex_key(M, V, _K).
 %  supporto
 %   mst
 :- dynamic mst/2.
-mst(M) :- mst(M, _Graph_size_minus_mst_size).
+mst(M) :- mst(M, _Number_of_Vertices).
 
 new_mst(M) :- graph(M), mst(M), !, delete_mst(M), assert_mst(M), new_heap(M).
 new_mst(M) :- graph(M), assert_mst(M), new_heap(M).

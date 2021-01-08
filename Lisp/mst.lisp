@@ -5,7 +5,7 @@
 
 ;  hashtables
 ;  now: (graph-id vertex-id) -> T
-;  next: same
+;  next: non esiste, usa vertex-key
 ;  hashtable per ogni grafo?
 (defparameter *visited* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: (graph-id vertex-id) -> weight
@@ -16,6 +16,7 @@
 ;  next: same
 ;  hashtable per ogni grafo?
 (defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
+;  nuova hashtable mst-id -> (n-of-vertex) ?
 
 ;  esecuzione
 (defun mst-prim (graph-id source)
@@ -133,12 +134,11 @@
 ;  next: graph-id -> (number-of-vertices number-of-arcs)
 (defparameter *graphs* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 ;  now: ('vertex graph-id vertex-id) -> ('vertex graph-id vertex-id)
-;  next: (graph-id vertex-id) -> T
+;  next: (graph-id vertex-id) -> (list of couples '(weight . vertex-id))
 ;  hashtable per ogni grafo?
 (defparameter *vertices* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: ('arc graph-id vertexS-id vertexT-id) -> ('arc graph-id vertexS-id vertexT-id weight)
-;  next: (graph-id vertexS-id vertexT-id) -> weight
-;  hashtable per ogni grafo?
+;  next: non esiste
 (defparameter *arcs* (make-hash-table :test #'equal :size 100000 :rehash-size 100000))
 
 ;  creazione e modifica
@@ -249,8 +249,8 @@
 
 
 ;  hashtables
-;  now: heap-id -> ('heap heap-id last-element array))
-;  next: same but without 'heap ?
+;  now: heap-id -> ('heap heap-id last-element array)
+;  next: heap-id -> (last-element array)
 (defparameter *heaps* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  creazione e modifica
@@ -290,10 +290,8 @@
 ;  stampa
 (defun heap-print (heap-id)
   (if (is-heap heap-id)
-      (progn
-        (format t "Lo heap contine ~D elementi:~%~A~%"
-                (heap-size heap-id) (heap-array heap-id))
-        T)))
+      (not (format t "Lo heap contine ~D elementi:~%~A~%"
+                   (heap-size heap-id) (heap-array heap-id)))))
 
 ;  supporto
 (defun is-heap (heap-id)
