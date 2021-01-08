@@ -250,124 +250,107 @@
 
 ;  hashtables
 ;  now: heap-id -> ('heap heap-id last-element array))
-;  next: the same
+;  next: same but without 'heap ?
 (defparameter *heaps* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  creazione e modifica
 (defun new-heap (heap-id &optional (capacity 42))
   (hashtable-insert heap-id (list 'heap heap-id 0 (make-array capacity)) *heaps*))
-
 (defun heap-delete (heap-id)
   (remhash heap-id *heaps*) T)
 
 (defun heap-insert (heap-id key val)
-  (let ((loheap (gethash heap-id *heaps*)))
-    (if (and (not (null loheap)) (< (heap-size heap-id) (heap-maxsize heap-id)))
+  (let ((array (heap-array heap-id))
+        (size (heap-size heap-id)))
+    (if (and (numberp key) (< size (length array)))
         (progn
-          (setf
-           (aref (fourth loheap)
-                 (heap-size heap-id))
-           (list key val))
-          (let ((current (heap-size heap-id)))
-            (recursive-insert heap-id current)
-            (setf (third loheap) (+ (heap-size heap-id) 1))
-            T))
-      nil)))
-
+          (setf (aref array size) (list key val))
+          (heap-increment heap-id)
+          (heapify-up array size)))))
 (defun heap-extract (heap-id)
-  (if (<= (heap-size heap-id) 0) ()
-    (let ((loheap (heap-actual-heap heap-id)))
-      (if (not (null loheap))
-        (let ((head (aref loheap 0)))
-          (setf (aref loheap 0) (aref loheap (- (heap-size heap-id) 1)))
-          (setf (aref loheap (- (heap-size heap-id) 1)) nil)
-          (setf (third (gethash heap-id *heaps*)) (- (heap-size heap-id) 1))
-          (minheapify heap-id 0)
-          head) () ))))
+  (let ((size (heap-size heap-id))
+        (array (heap-array heap-id))
+        (head (heap-head heap-id)))
+    (if (and (> size 0)
+             (heapify (swap-entries array 0 (1- size)) 0 (- size 2)))
+        (progn
+          (setf (aref array (1- size)) NIL)
+          (heap-decrement heap-id)
+          head))))
 
 ;  lettura
 (defun heap-empty (heap-id)
-  (let ((size (heap-size heap-id)))
-    (if size (zerop size))))
-
+  (zerop (heap-size heap-id)))
 (defun heap-not-empty (heap-id)
-  (let ((size (heap-size heap-id)))
-    (if size (> size 0))))
+  (> (heap-size heap-id) 0))
 
 (defun heap-head (heap-id)
-  (and 
-   (gethash heap-id *heaps*)
-   (aref (heap-actual-heap heap-id) 0)))
+  (aref-strong (heap-array heap-id) 0))
 
 ;  stampa
 (defun heap-print (heap-id)
-  (if (null (heap-size heap-id)) nil
-    (progn
-      (format t "Lo heap contine ~D elementi: ~A"
-              (heap-size heap-id) (heap-actual-heap heap-id))
-      T)))
+  (if (is-heap heap-id)
+      (progn
+        (format t "Lo heap contine ~D elementi:~%~A~%"
+                (heap-size heap-id) (heap-array heap-id))
+        T)))
 
 ;  supporto
+(defun is-heap (heap-id)
+  (gethash heap-id *heaps*))
+(defun heap-array (heap-id)
+  (fourth (gethash heap-id *heaps*)))
 (defun heap-size (heap-id)
-  (and (gethash heap-id *heaps*)
-       (third (gethash heap-id *heaps*))))
+  (let ((size (third (gethash heap-id *heaps*))))
+    (if (numberp size) size 0)))
 
-(defun heap-actual-heap (heap-id)
-  (and (gethash heap-id *heaps*)
-       (fourth (gethash heap-id *heaps*))))
+(defun heap-increment (heap-id)
+  (if (is-heap heap-id)
+      (hashtable-insert heap-id
+                        (list 'heap heap-id (1+ (heap-size heap-id)) (heap-array heap-id))
+                        *heaps*)))
+(defun heap-decrement (heap-id)
+  (if (is-heap heap-id)
+      (hashtable-insert heap-id
+                        (list 'heap heap-id (1- (heap-size heap-id)) (heap-array heap-id))
+                        *heaps*)))
 
-(defun parent (index)
-  (first (multiple-value-list (floor (/ index 2)))))
-(defun leftchild (index)
-  (* index 2))
-(defun rightchild (index)
-  (+ (* index 2) 1))
+(defun parent-idx (index)
+  (if (<= index 2) 0
+    (first (multiple-value-list (floor (/ (1- index) 2))))))
+(defun left-child-idx (index)
+  (1- (* (1+ index) 2)))
+(defun right-child-idx (index)
+  (* (1+ index) 2))
 
-(defun isleaf (heap-id index)
-  (and (>= index (first
-                 (multiple-value-list
-                  (floor (/ (heap-size heap-id) 2)))))
-      (<= index (heap-size heap-id))))
- 
-(defun swap (index1 index2 heap-id)
-  (let ((loheap (heap-actual-heap heap-id)))
-    (let ((temp (aref loheap index1)))
-      (setf (aref loheap index1)
-            (aref loheap index2))
-      (setf (aref loheap index2)
-            temp))))
+(defun heapify (array index &optional (max most-positive-fixnum))
+  (let ((left-index (left-child-idx index))
+        (right-index (right-child-idx index))
+        (index-key (car (aref-strong array index)))
+        (left-key (car (aref-strong array (left-child-idx index))))
+        (right-key (car (aref-strong array (right-child-idx index))))
+        (max-index (min max (1- (length array)))))
+    (cond
+     ((> left-index max-index) T)
+     ((> right-index max-index)
+      (if (< left-key index-key)
+          (heapify (swap-entries array index left-index) left-index max-index)
+        T))
+     ((= (min index-key left-key right-key) index-key) T)
+     ((= (min index-key left-key right-key) left-key)
+      (heapify (swap-entries array index left-index) left-index max-index))
+     ((= (min index-key left-key right-key) right-key)
+      (heapify (swap-entries array index right-index) right-index max-index)))))
 
-(defun minheapify (heap-id index)
-  (let ((loheap (heap-actual-heap heap-id)))
-    (if (null (isleaf heap-id index))
-        (let ((indexel (first (aref loheap index)))
-              (leftchildel (first (aref loheap (leftchild index))))
-              (rightchildel (first (aref loheap (rightchild index)))))
-          (if (or (> indexel leftchildel)
-                  (> indexel rightchildel))
-              (if (< leftchildel rightchildel)
-                  (progn
-                    (swap index (leftchild index) heap-id)
-                    (minheapify heap-id (leftchild index)))
-                (progn
-                  (swap index (rightchild index) heap-id)
-                  (minheapify heap-id (rightchild index))))))
-      T)))
-
-(defun heap-maxsize (heap-id)
-  (length (heap-actual-heap heap-id)))
-
-(defun recursive-insert (heap-id current)
-  (let ((loheap (heap-actual-heap heap-id)))
-    (if
-        (< (first (aref loheap
-                        current))
-           (first (aref loheap
-                        (parent current))))
-        (progn
-          (swap current (parent current) heap-id)
-          (recursive-insert
-           heap-id (parent current))))))
+(defun heapify-up (array index)
+  (let ((parent-index (parent-idx index))
+        (index-key (car (aref-strong array index)))
+        (parent-key (car (aref-strong array (parent-idx index)))))
+    (cond
+      ((<= index 0) T)
+      ((<= parent-key index-key) T)
+      ((< index-key parent-key)
+       (heapify-up (swap-entries array index parent-index) parent-index)))))
 
 
 ; supporto generico
@@ -380,3 +363,19 @@
 
 (defun hashtable-insert (key value hashtable)
   (setf (gethash key hashtable) value))
+
+(defun aref-strong (array? index)
+  (if (and (arrayp array?)
+           (< index (length array?))
+           (>= index 0))
+      (aref array? index)))
+
+(defun swap-entries (array i1 i2)
+  (let ((e1 (aref-strong array i1))
+        (e2 (aref-strong array i2)))
+    (if (< (max i1 i2) (length array))
+        (progn
+          (if (/= i1 i2) (progn
+                           (setf (aref array i1) e2)
+                           (setf (aref array i2) e1)))
+          array))))

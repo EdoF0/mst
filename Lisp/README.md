@@ -76,7 +76,7 @@ Ritorna graph-id se graph-id è un grafo che esiste, NIL altrimenti.
 new-vertex graph-id vertex-id => vertex-rep
 ```
 Crea un nuovo vertice vertex-id nel grafo graph-id se non esiste già.  
-Ritorna il vertice rappresentato come `(vertex graph-id vertex-id)`.  
+Ritorna il vertice rappresentato come `('vertex graph-id vertex-id)`.  
 Ritorna NIL se non esiste graph-id.
 
 #### new-arc
@@ -84,7 +84,7 @@ Ritorna NIL se non esiste graph-id.
 new-arc graph-id vertex-id vertex-id &optional (weight 1) => arc-rep
 ```
 Crea un nuovo arco dal primo vertex-id al secondo peso weight nel grafo graph-id se non esiste già.  
-Ritorna l'arco rappresentato come `(arc graph-id vertex-id vertex-id weight)`.  
+Ritorna l'arco rappresentato come `('arc graph-id vertex-id vertex-id weight)`.  
 Ritorna NIL se non esiste graph-id o i vertici specificati, oppure se weight non è un numero non negativo (sono accettati numeri razionali).  
 Creare un arco già esistente con peso diverso sovrascrive quello precedente.
 
@@ -139,7 +139,7 @@ Tutte le operazioni di modifica includono la riorganizzazione interna della stru
 new-heap heap-id &optional (capacity 42) => heap-rep
 ```
 Crea un nuovo minheap heap-id, se heap-id esiste già viene sovrascritto.  
-Ritorna l'heap rappresentato come `(heap heap-id heap-size actual-heap)`.
+Ritorna l'heap rappresentato come `('heap heap-id heap-size actual-heap)`.
 
 #### heap-delete
 ```lisp
@@ -152,7 +152,7 @@ Elimina il minheap heap-id se esiste.
 heap-insert heap-id key value => boolean
 ```
 Inserisce nel minheap heap-id un valore value con chiave key.  
-Fallisce se è esaurita la dimensione dell'heap o l'heap non esiste.
+Fallisce se è esaurita la dimensione dell'heap, l'heap non esiste oppure key non è un numero.
 
 #### heap-extract
 ```lisp
@@ -160,7 +160,7 @@ heap-extract heap-id => (key value)
 ```
 Elimina dal minheap heap-id la testa.  
 Ritorna la lista formata dalla chiave key e il valore value della testa rimossa.  
-Se l'heap è vuoto la lista ritornata è vuota, se l'heap non esiste vene ritornato NIL.
+Se l'heap è vuoto o non esiste ritorna NIL.
 
 ### Lettura
 
@@ -168,7 +168,8 @@ Se l'heap è vuoto la lista ritornata è vuota, se l'heap non esiste vene ritorn
 ```lisp
 heap-empty heap-id => boolean
 ```
-Ritorna T se il minheap heap-id è privo di elementi, NIL altrimenti.
+Ritorna T se il minheap heap-id è privo di elementi, NIL altrimenti.  
+Ritorna T se il minheap non esiste.
 
 #### heap-not-empty
 ```lisp
@@ -180,7 +181,8 @@ Ritorna T se il minheap heap-id contiene almeno un elemento, NIL altrimenti.
 ```lisp
 heap-head heap-id => (key value)
 ```
-Ritorna la lista formata dalla chiave key e il valore v dell'elemento in testa al minheap heap-id.
+Ritorna la lista formata dalla chiave key e il valore value dell'elemento in testa al minheap heap-id.
+Se l'heap è vuoto o non esiste ritorna NIL.
 
 ### Stampa
 
