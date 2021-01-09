@@ -184,6 +184,27 @@ heap-head heap-id => (key value)
 Ritorna la lista formata dalla chiave key e il valore value dell'elemento in testa al minheap heap-id.
 Se l'heap è vuoto o non esiste ritorna NIL.
 
+#### heap-id
+```lisp
+heap-id heap-rep => heap-id
+```
+Ritorna l'heap-id della heap-rep solo se esiste un minheap che corrisponde alla heap-rep, NIL altrimenti.  
+Nota: la corrispondenza viene verificata con la uguaglianza dei valori della heap-rep heap-id, heap-size e actual-heap, pertanto l'array referenziato nella heap-rep in input deve essere lo stesso array e non semplicemente uno uguale.
+
+#### heap-size
+```lisp
+heap-size heap-rep => integer
+```
+Ritorna la dimensione del minheap della heap-rep solo se esiste un minheap che corrisponde alla heap-rep, NIL altrimenti.  
+Nota: la corrispondenza viene verificata con la uguaglianza dei valori della heap-rep heap-id, heap-size e actual-heap, pertanto l'array referenziato nella heap-rep in input deve essere lo stesso array e non semplicemente uno uguale.
+
+#### heap-actual-heap
+```lisp
+heap-actual-heap heap-rep => array
+```
+Ritorna l'array (la struttura dati su cui si basa il minheap) della heap-rep solo se esiste un minheap che corrisponde alla heap-rep, NIL altrimenti.  
+Nota: la corrispondenza viene verificata con la uguaglianza dei valori della heap-rep heap-id, heap-size e actual-heap, pertanto l'array referenziato nella heap-rep in input deve essere lo stesso array e non semplicemente uno uguale.
+
 ### Stampa
 
 #### heap-print

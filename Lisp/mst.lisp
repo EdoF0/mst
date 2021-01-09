@@ -129,6 +129,8 @@
 ; grafi
 
 
+;  vertex-rep: ('arc graph-id vertex-id vertex-id weight)
+;  arc-rep: ('arc graph-id vertex-id vertex-id weight)
 ; hashtables
 ;  now: graph-id -> graph-id
 ;  next: graph-id -> (number-of-vertices number-of-arcs)
@@ -248,9 +250,10 @@
 ; minheap
 
 
+;  heap-rep: ('heap heap-id heap-size actual-heap)
 ;  hashtables
-;  now: heap-id -> ('heap heap-id last-element array)
-;  next: heap-id -> (last-element array)
+;  now: heap-id -> ('heap heap-id heap-size actual-heap)
+;  next: heap-id -> (heap-size actual-heap)
 (defparameter *heaps* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  creazione e modifica
@@ -261,14 +264,14 @@
 
 (defun heap-insert (heap-id key val)
   (let ((array (heap-array heap-id))
-        (size (heap-size heap-id)))
+        (size (heap-index heap-id)))
     (if (and (numberp key) (< size (length array)))
         (progn
           (setf (aref array size) (list key val))
           (heap-increment heap-id)
           (heapify-up array size)))))
 (defun heap-extract (heap-id)
-  (let ((size (heap-size heap-id))
+  (let ((size (heap-index heap-id))
         (array (heap-array heap-id))
         (head (heap-head heap-id)))
     (if (and (> size 0)
@@ -280,37 +283,50 @@
 
 ;  lettura
 (defun heap-empty (heap-id)
-  (zerop (heap-size heap-id)))
+  (zerop (heap-index heap-id)))
 (defun heap-not-empty (heap-id)
-  (> (heap-size heap-id) 0))
+  (> (heap-index heap-id) 0))
 
 (defun heap-head (heap-id)
   (aref-strong (heap-array heap-id) 0))
+
+(defun heap-id (heap-rep)
+  (if (correct-heap-rep heap-rep) (second heap-rep)))
+(defun heap-size (heap-rep)
+  (if (correct-heap-rep heap-rep) (third heap-rep)))
+(defun heap-actual-heap (heap-rep)
+  (if (correct-heap-rep heap-rep) (fourth heap-rep)))
 
 ;  stampa
 (defun heap-print (heap-id)
   (if (is-heap heap-id)
       (not (format t "Lo heap contine ~D elementi:~%~A~%"
-                   (heap-size heap-id) (heap-array heap-id)))))
+                   (heap-index heap-id) (heap-array heap-id)))))
 
 ;  supporto
 (defun is-heap (heap-id)
   (gethash heap-id *heaps*))
 (defun heap-array (heap-id)
   (fourth (gethash heap-id *heaps*)))
-(defun heap-size (heap-id)
+(defun heap-index (heap-id)
   (let ((size (third (gethash heap-id *heaps*))))
     (if (numberp size) size 0)))
+
+(defun correct-heap-rep (heap-rep)
+  (let ((heap-rep-id (second heap-rep)))
+    (and (is-heap heap-rep-id)
+         (= (third heap-rep) (heap-index heap-rep-id))
+         (equal (fourth heap-rep) (heap-array heap-rep-id)))))
 
 (defun heap-increment (heap-id)
   (if (is-heap heap-id)
       (hashtable-insert heap-id
-                        (list 'heap heap-id (1+ (heap-size heap-id)) (heap-array heap-id))
+                        (list 'heap heap-id (1+ (heap-index heap-id)) (heap-array heap-id))
                         *heaps*)))
 (defun heap-decrement (heap-id)
   (if (is-heap heap-id)
       (hashtable-insert heap-id
-                        (list 'heap heap-id (1- (heap-size heap-id)) (heap-array heap-id))
+                        (list 'heap heap-id (1- (heap-index heap-id)) (heap-array heap-id))
                         *heaps*)))
 
 (defun parent-idx (index)
