@@ -20,7 +20,7 @@
 
 ;  esecuzione
 (defun mst-prim (graph-id source)
-  (cond ((not (null (vertex-in-graph graph-id source)))
+  (cond ((not (null (is-vertex graph-id source)))
          (progn 
            (delete-mst graph-id)
            (new-heap graph-id (length (graph-arcs graph-id)))
@@ -45,12 +45,15 @@
 ;  supporto
 (defun delete-mst (graph-id)
   (maphash (lambda (key val)
+             (declare (ignore val))
              (if (strn= (first key) graph-id) (remhash key *vertex-keys*)))
            *vertex-keys*)
   (maphash (lambda (key val)
+             (declare (ignore val))
              (if (strn= (first key) graph-id) (remhash key *previous*)))
            *previous*)
   (maphash (lambda (key val)
+             (declare (ignore val))
              (if (strn= (first key) graph-id) (remhash key *visited*)))
            *visited*))
 
@@ -147,104 +150,103 @@
 (defun new-graph (graph-id)
   (delete-graph graph-id)
   (hashtable-insert graph-id graph-id *graphs*))
-
 (defun delete-graph (graph-id)
-  (maphash (lambda (key val) (if (strn= (second key) graph-id)
-                                 (remhash val *vertices*)))
-           *vertices*)
-  (maphash (lambda (key val) (if (strn= (second key) graph-id)
-                                 (remhash val *arcs*)))
-           *arcs*)
-  (remhash graph-id *graphs* )
+  (maphash
+   (lambda (key val)
+     (declare (ignore val))
+     (if (strn= (second key) graph-id) (remhash key *vertices*)))
+   *vertices*)
+  (maphash
+   (lambda (key val)
+     (declare (ignore val))
+     (if (strn= (second key) graph-id) (remhash key *arcs*)))
+   *arcs*)
+  (remhash graph-id *graphs*)
   nil)
 
-(defun is-graph (graph-id)
-  (gethash graph-id *graphs*))
-
 (defun new-vertex (graph-id vertex-id)
-  (and 
+  (and
    (is-graph graph-id)
    (hashtable-insert (list 'vertex graph-id vertex-id) (list 'vertex graph-id vertex-id) *vertices*)))
 
 (defun new-arc (graph-id vertexS-id vertexT-id &optional (weight 1))
-  (and 
-   (vertex-in-graph graph-id vertexS-id)
-   (vertex-in-graph graph-id vertexT-id)
+  (and
+   (numberp weight)
+   (>= weight 0)
+   (is-vertex graph-id vertexS-id)
+   (is-vertex graph-id vertexT-id)
    (hashtable-insert (list 'arc graph-id vertexS-id vertexT-id) (list 'arc graph-id vertexS-id vertexT-id weight) *arcs*)))
 
 ;  lettura
-(defun graph-vertices (graph-id)
-  (let ((vertices  ()))
-    (maphash (lambda (key val)
-               (if (strn= (second key) graph-id)
-                   (push val vertices)))
-             *vertices*)
-    vertices))
+(defun is-graph (graph-id)
+  (if (gethash graph-id *graphs*) graph-id))
 
+(defun graph-vertices (graph-id)
+  (hashtable-get
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (second key) graph-id))
+   *vertices*))
 (defun graph-arcs (graph-id)
-  (let ((arcs ()))
-    (maphash (lambda (key val)
-               (if (strn= (second key) graph-id)
-                   (push val arcs)))
-             *arcs*)
-    arcs))
+  (hashtable-get
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (second key) graph-id))
+   *arcs*))
 
 (defun graph-vertex-neighbors (graph-id vertex-id)
-  (let ((arcs ()))
-    (maphash (lambda (key val)
-               (if
-                   (and (strn= (second key) graph-id)
-                        (or
-                         (strn= (third key) vertex-id)
-                         (strn= (fourth key) vertex-id)))
-                   (push val arcs)))
-             *arcs*)
-    arcs))
-
+  (hashtable-get
+   (lambda (key val)
+     (declare (ignore val))
+     (and
+      (strn= (second key) graph-id)
+      (or
+       (strn= (third key) vertex-id)
+       (strn= (fourth key) vertex-id))))
+     *arcs*))
 (defun graph-vertex-adjacent (graph-id vertex-id)
-  (let ((arcs ()) (vertices ()))
-    (maphash (lambda (key val)
-               (if (and (strn= (second key) graph-id) 
-                        (or
-                         (strn= (third key) vertex-id) 
-                         (strn= (fourth key) vertex-id)))
-                   (push val arcs)))
-             *arcs*)
-    (mapcar (lambda (arc)
-              (if (equal (third arc) vertex-id)
-                  (push (list 'vertex graph-id (fourth arc)) vertices)
-                (push (list 'vertex graph-id (third arc)) vertices)))
-            arcs)
-    vertices))
+  (arcs-to-vertices (graph-vertex-neighbors graph-id vertex-id) graph-id vertex-id))
 
 ;  stampa
 (defun graph-print (graph-id)
   (format t "VERTICI:~%")
   (list-vertices graph-id)
   (format t "~%ARCHI:~%")
-  (list-arcs graph-id))
+  (list-arcs graph-id)
+  NIL)
 
 ;  supporto
 (defun beautify-arc (arc parent)
   (cond ((strn= (third arc) parent) arc)
         (T (list 'arc (second arc) parent (third arc) (fifth arc)))))
 
-(defun list-vertices (graph-id)
-  (maphash (lambda (key val)
-             (if (strn= (second key) graph-id)
-                 (format t "~A~%" val)))
-           *vertices*))
-
-(defun list-arcs (graph-id)
-  (maphash (lambda (key val)
-             (if (strn= (second key) graph-id)
-                 (format t "~A~%" val)))
-           *arcs*))
-
-(defun vertex-in-graph (graph-id vertex-id)
+(defun is-vertex (graph-id vertex-id)
   (and
    (is-graph graph-id)
    (gethash (list 'vertex graph-id vertex-id) *vertices*)))
+
+(defun arcs-to-vertices (arcs graph-id vertex-ignore)
+  (if (not (null arcs))
+      (let ((arc (first arcs)))
+        (cond
+         ((and (strn= (second arc) graph-id) (strn= (third arc) vertex-ignore))
+          (cons (list 'vertex graph-id (fourth arc)) (arcs-to-vertices (rest arcs) graph-id vertex-ignore)))
+         ((and (strn= (second arc) graph-id) (strn= (fourth arc) vertex-ignore))
+          (cons (list 'vertex graph-id (third arc)) (arcs-to-vertices (rest arcs) graph-id vertex-ignore)))
+         (T (arcs-to-vertices (rest arcs) graph-id vertex-ignore))))))
+
+(defun list-vertices (graph-id)
+  (hashtable-get
+   (lambda (key val)
+     (and (strn= (second key) graph-id)
+          (not (format t "~A~%" val))))
+   *vertices*))
+(defun list-arcs (graph-id)
+  (hashtable-get
+   (lambda (key val)
+     (and (strn= (second key) graph-id)
+          (not (format t "~A~%" val))))
+   *arcs*))
 
 
 ; minheap
@@ -377,6 +379,13 @@
 
 (defun hashtable-insert (key value hashtable)
   (setf (gethash key hashtable) value))
+(defun hashtable-get (condition-function hashtable)
+  (let ((out-list ()))
+    (maphash
+     (lambda (key val)
+       (if (funcall condition-function key val) (push val out-list)))
+     hashtable)
+    out-list))
 
 (defun aref-strong (array? index)
   (if (and (arrayp array?)

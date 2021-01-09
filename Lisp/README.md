@@ -65,12 +65,6 @@ delete-graph graph-id => NIL
 ```
 Elimina il grafo graph-id se esiste.
 
-#### is-graph
-```lisp
-is-graph graph-id => graph-id
-```
-Ritorna graph-id se graph-id è un grafo che esiste, NIL altrimenti.
-
 #### new-vertex
 ```lisp
 new-vertex graph-id vertex-id => vertex-rep
@@ -89,6 +83,12 @@ Ritorna NIL se non esiste graph-id o i vertici specificati, oppure se weight non
 Creare un arco già esistente con peso diverso sovrascrive quello precedente.
 
 ### Lettura
+
+#### is-graph
+```lisp
+is-graph graph-id => graph-id
+```
+Ritorna graph-id se graph-id è un grafo che esiste, NIL altrimenti.
 
 #### graph-vertices
 ```lisp
@@ -110,13 +110,15 @@ La lista è composta da elementi arc-rep, come ritornato dalla new-arc.
 ```lisp
 graph-vertex-neighbors graph-id vertex-id => arc-rep-list
 ```
-Ritorna la lista (arc-rep) di tutti gli archi collegati al vertice vertex-id del grafo graph-id.
+Ritorna la lista (arc-rep) di tutti gli archi collegati al vertice vertex-id del grafo graph-id.  
+Se graph-id o vertex-id non esiste la lista è vuota.
 
 #### graph-vertex-adjacent
 ```lisp
 graph-vertex-adjacent graph-id vertex-id => vertex-rep-list
 ```
-Ritorna la lista (vertex-rep) di tutti i vertici adiacenti al vertice vertex-id del grafo graph-id.
+Ritorna la lista (vertex-rep) di tutti i vertici adiacenti al vertice vertex-id del grafo graph-id.  
+Se graph-id o vertex-id non esiste la lista è vuota.
 
 ### Stampa
 
