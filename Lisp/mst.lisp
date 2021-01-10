@@ -152,13 +152,13 @@
   (let ((child (second (first vertices))))
     (if (not (null child))
         (cons
-         (is-arc-fluid graph-id parent child)
+         (get-arc-rep graph-id parent child)
          (mst-vertex-neighbors-recursive graph-id parent (rest vertices))))))
 
-(defun mst-order-arcs (arcs)
-  (sort arcs #'strn< :key #'fourth)
-  (stable-sort arcs #'< :key #'fifth)
-  arcs)
+(defun mst-order-arcs (arc-rep-list)
+  (sort arc-rep-list #'strn< :key #'fourth)
+  (stable-sort arc-rep-list #'< :key #'fifth)
+  arc-rep-list)
 
 (defun beautify-arc (arc parent)
   (cond ((strn= (third arc) parent) arc)
@@ -168,18 +168,13 @@
 ; grafi
 
 
-;  vertex-rep: ('arc graph-id vertex-id vertex-id weight)
+;  vertex-rep: ('vertex graph-id vertex-id)
 ;  arc-rep: ('arc graph-id vertex-id vertex-id weight)
 ; hashtables
 ;  now: graph-id -> (number-of-vertices . number-of-arcs)
 (defparameter *graphs* (make-hash-table :test #'equal :size 10 :rehash-size 1))
-;  now: ('vertex graph-id vertex-id) -> ('vertex graph-id vertex-id)
-;  next: (graph-id vertex-id) -> (list of couples '(weight . vertex-id))
-;  hashtable per ogni grafo?
+;  next: (graph-id vertex-id) -> list of '(weight . vertex-id)
 (defparameter *vertices* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
-;  now: ('arc graph-id vertexS-id vertexT-id) -> ('arc graph-id vertexS-id vertexT-id weight)
-;  next: non esiste
-(defparameter *arcs* (make-hash-table :test #'equal :size 100000 :rehash-size 100000))
 
 ;  creazione e modifica
 (defun new-graph (graph-id)
@@ -190,13 +185,8 @@
   (hashtable-remove
    (lambda (key val)
      (declare (ignore val))
-     (strn= (second key) graph-id))
+     (strn= (first key) graph-id))
    *vertices*)
-  (hashtable-remove
-   (lambda (key val)
-     (declare (ignore val))
-     (strn= (second key) graph-id))
-   *arcs*)
   (remhash graph-id *graphs*)
   NIL)
 
@@ -206,7 +196,7 @@
           (make-vertex-rep graph-id vertex-id)
         (progn
           (hashtable-insert graph-id (cons (1+ (graph-vertices-n graph-id)) (graph-arcs-n graph-id)) *graphs*)
-          (hashtable-insert (list 'vertex graph-id vertex-id) (list 'vertex graph-id vertex-id) *vertices*)
+          (hashtable-insert (list graph-id vertex-id) () *vertices*)
           (make-vertex-rep graph-id vertex-id)))))
 
 (defun new-arc (graph-id vertexS-id vertexT-id &optional (weight 1))
@@ -217,10 +207,10 @@
    ;(is-vertex graph-id vertexT-id)
    (new-vertex graph-id vertexS-id)
    (new-vertex graph-id vertexT-id)
-   (if (not (is-arc-fluid graph-id vertexS-id vertexT-id))
-       (hashtable-insert graph-id (cons (graph-vertices-n graph-id) (1+ (graph-arcs-n graph-id))) *graphs*)
-     T)
-   (hashtable-insert (list 'arc graph-id vertexS-id vertexT-id) (list 'arc graph-id vertexS-id vertexT-id weight) *arcs*)
+   (if (is-arc-fluid graph-id vertexS-id vertexT-id) T
+     (hashtable-insert graph-id (cons (graph-vertices-n graph-id) (1+ (graph-arcs-n graph-id))) *graphs*))
+   (hashtable-insert (list graph-id vertexS-id) (cons (cons weight vertexT-id) (vertex-list graph-id vertexS-id)) *vertices*)
+   (hashtable-insert (list graph-id vertexT-id) (cons (cons weight vertexS-id) (vertex-list graph-id vertexT-id)) *vertices*)
    (make-arc-rep graph-id vertexS-id vertexT-id weight)))
 
 ;  lettura
@@ -228,28 +218,23 @@
   (if (gethash graph-id *graphs*) graph-id))
 
 (defun graph-vertices (graph-id)
-  (hashtable-get
-   (lambda (key val)
-     (declare (ignore val))
-     (strn= (second key) graph-id))
-   *vertices*))
+  (mapcar
+   #'make-vertex-rep-from-list
+   (hashtable-get-reverse
+    (lambda (key val)
+      (declare (ignore val))
+      (strn= (first key) graph-id))
+    *vertices*)))
 (defun graph-arcs (graph-id)
-  (hashtable-get
-   (lambda (key val)
-     (declare (ignore val))
-     (strn= (second key) graph-id))
-   *arcs*))
+  (level-first-level (mapcar
+   #'graph-vertex-neighbors-single-from-rep
+   (graph-vertices graph-id)
+   )))
 
 (defun graph-vertex-neighbors (graph-id vertex-id)
-  (hashtable-get
-   (lambda (key val)
-     (declare (ignore val))
-     (and
-      (strn= (second key) graph-id)
-      (or
-       (strn= (third key) vertex-id)
-       (strn= (fourth key) vertex-id))))
-     *arcs*))
+  (mapcar
+   #'make-arc-rep-from-list
+   (vertex-arcs graph-id vertex-id)))
 (defun graph-vertex-adjacent (graph-id vertex-id)
   (arcs-to-vertices (graph-vertex-neighbors graph-id vertex-id) graph-id vertex-id))
 
@@ -264,8 +249,12 @@
 ;  supporto
 (defun make-vertex-rep (graph-id vertex-id)
   (list 'vertex graph-id vertex-id))
+(defun make-vertex-rep-from-list (vertex-list)
+  (cons 'vertex vertex-list))
 (defun make-arc-rep (graph-id vertexS-id vertexT-id weight)
   (list 'arc graph-id vertexS-id vertexT-id weight))
+(defun make-arc-rep-from-list (arc-list)
+  (cons 'arc arc-list))
 
 (defun graph-vertices-n (graph-id)
   (car (gethash graph-id *graphs*)))
@@ -275,19 +264,39 @@
 (defun is-vertex (graph-id vertex-id)
   (and
    (is-graph graph-id)
-   (second (multiple-value-list (gethash (list 'vertex graph-id vertex-id) *vertices*)))))
+   (second (multiple-value-list (gethash (list graph-id vertex-id) *vertices*)))))
+(defun vertex-list (graph-id vertex-id)
+  (first (multiple-value-list (gethash (list graph-id vertex-id) *vertices*))))
+(defun vertex-list-single (graph-id vertex-id)
+  (remove-if-not (lambda (link) (strn< vertex-id (cdr link))) (vertex-list graph-id vertex-id)))
+
+(defun vertex-arcs (graph-id vertex-id)
+  (vertex-arcs-recursive graph-id vertex-id (vertex-list graph-id vertex-id)))
+(defun vertex-arcs-single (graph-id vertex-id)
+  (vertex-arcs-recursive graph-id vertex-id (vertex-list-single graph-id vertex-id)))
+(defun vertex-arcs-recursive (graph-id vertex-id links)
+  (let ((link (first links)))
+    (if (not (null link)) (cons (list graph-id vertex-id (cdr link) (car link))
+                                (vertex-arcs-recursive graph-id vertex-id (rest links))))))
+
 (defun is-arc (graph-id vertexS-id vertexT-id &optional weight)
   (if (and (is-graph graph-id) (is-vertex graph-id vertexS-id) (is-vertex graph-id vertexT-id))
    (if (null weight)
-       (first (multiple-value-list (gethash (list 'arc graph-id vertexS-id vertexT-id) *arcs*)))
-     (let ((arc (gethash (list 'arc graph-id vertexS-id vertexT-id) *arcs*)))
-      (if (strn= weight (fifth arc)) arc)))))
+       (let ((link (first (member vertexT-id (vertex-list graph-id vertexS-id) :key #'cdr :test #'equal))))
+         (if link (car link)))
+     (if
+         (strn= weight (car (first (member (cons weight vertexT-id) (vertex-list graph-id vertexS-id) :test #'equal))))
+         weight))))
 (defun is-arc-fluid (graph-id vertexS-id vertexT-id &optional weight)
   (if (is-arc graph-id vertexS-id vertexT-id weight)
       (is-arc graph-id vertexS-id vertexT-id weight)
     (is-arc graph-id vertexT-id vertexS-id weight)))
 (defun is-arc-single (graph-id vertexS-id vertexT-id &optional weight)
   (if (strn< vertexS-id vertexT-id) (is-arc graph-id vertexS-id vertexT-id weight)))
+
+(defun get-arc-rep (graph-id vertexS-id vertexT-id &optional weight)
+  (let ((real-weight (is-arc graph-id vertexS-id vertexT-id weight)))
+    (if  real-weight (make-arc-rep graph-id vertexS-id vertexT-id real-weight))))
 
 (defun arcs-to-vertices (arcs graph-id vertex-ignore)
   (if (not (null arcs))
@@ -298,6 +307,13 @@
          ((and (strn= (second arc) graph-id) (strn= (fourth arc) vertex-ignore))
           (cons (list 'vertex graph-id (third arc)) (arcs-to-vertices (rest arcs) graph-id vertex-ignore)))
          (T (arcs-to-vertices (rest arcs) graph-id vertex-ignore))))))
+
+(defun graph-vertex-neighbors-single-from-rep (vertex-rep)
+  (graph-vertex-neighbors-single (second vertex-rep) (third vertex-rep)))
+(defun graph-vertex-neighbors-single (graph-id vertex-id)
+  (mapcar
+   #'make-arc-rep-from-list
+   (vertex-arcs-single graph-id vertex-id)))
 
 (defun list-vertices (graph-id)
   (hashtable-get
@@ -439,7 +455,7 @@
 (defun strn= (val1 val2)
   (string= (write-to-string val1) (write-to-string val2)))
 (defun strn< (val1 val2)
-  (string< (write-to-string val1) (write-to-string val2)))
+  (if (string< (write-to-string val1) (write-to-string val2)) T))
 
 (defun hashtable-insert (key value hashtable)
   (setf (gethash key hashtable) value))
@@ -479,3 +495,6 @@
                            (setf (aref array i1) e2)
                            (setf (aref array i2) e1)))
           array))))
+
+(defun level-first-level (list)
+  (if list (append (first list) (level-first-level (rest list)))))
