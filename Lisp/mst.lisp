@@ -13,7 +13,7 @@
 ;  hashtable per ogni grafo?
 (defparameter *vertex-keys* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: (graph-id child) -> parent
-;  next: same
+;  next: forse qualcosa di opposto visto che mi serve per mst-vertex neighbors da parent a childs
 ;  hashtable per ogni grafo?
 (defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  nuova hashtable mst-id -> (n-of-vertex, n_of_fails) ?
@@ -41,6 +41,18 @@
   (gethash (list graph-id vertex-id) *previous*))
 
 ;  supporto
+(defun is-visited (graph-id vertex-id)
+  (gethash (list graph-id vertex-id) *visited*))
+
+(defun new-vertex-key (graph-id vertex-id weight)
+  (let ((old-weight (mst-vertex-key graph-id vertex-id)))
+    (cond ((> old-weight weight)
+           (hashtable-insert (list graph-id vertex-id) weight *vertex-keys*))) T))
+(defun new-vertex-visited (graph-id vertex-id)
+  (hashtable-insert (list graph-id vertex-id) T *visited*))
+(defun new-vertex-previous (graph-id parent child)
+  (hashtable-insert (list graph-id child) parent *previous*))
+
 (defun delete-mst (graph-id)
   (hashtable-remove
    (lambda (key val)
@@ -78,6 +90,13 @@
   (new-vertex-key graph-id from weight)
   (new-vertex-visited graph-id to))
 
+(defun heap-add-arcs (graph-id vertex-id)
+  (mapcar
+   (lambda (arc)
+     (heap-insert graph-id (fifth arc) arc))
+   (graph-vertex-neighbors graph-id vertex-id))
+  T)
+
 (defun mst-get-floor (graph-id source ordered-arcs)
   (let ((arc (fitrst ordered-arcs)))
     (if (arc)
@@ -93,16 +112,23 @@
              (mst-get-floor graph-id source (rest ordered-arcs))))))))
 
 (defun mst-vertex-neighbors (graph-id parent)
+;  (hashtable-get
+;   (lambda (key val)
+;     (declare (ignore key))
+;     (strn= val parent))
+;   *previous*)
   (let ((children ()) (arcs ()))
-    (maphash (lambda (key val)
-               (if (strn= val parent) (push (second key) children)))
-             *previous*)
-    (mapcar (lambda (child)
-              (push (beautify-arc
-                     (or (gethash (list 'arc graph-id parent child) *arcs*)
-                         (gethash (list 'arc graph-id child parent) *arcs*))
-                     parent) arcs))
-            children)
+    (maphash
+     (lambda (key val)
+       (if (strn= val parent) (push (second key) children)))
+     *previous*)
+    (mapcar
+     (lambda (child)
+       (push (beautify-arc
+              (or (gethash (list 'arc graph-id parent child) *arcs*)
+                  (gethash (list 'arc graph-id child parent) *arcs*))
+              parent) arcs))
+     children)
     arcs))
 
 (defun mst-order-arcs (arcs)
@@ -110,24 +136,9 @@
   (stable-sort arcs #'< :key #'fifth)
   arcs)
 
-(defun is-visited (graph-id vertex-id)
-  (gethash (list graph-id vertex-id) *visited*))
-
-(defun new-vertex-key (graph-id vertex-id weight)
-  (let ((old-weight (mst-vertex-key graph-id vertex-id)))
-    (cond ((> old-weight weight)
-           (hashtable-insert (list graph-id vertex-id) weight *vertex-keys*))) T))
-
-(defun new-vertex-visited (graph-id vertex-id)
-  (hashtable-insert (list graph-id vertex-id) T *visited*))
-
-(defun new-vertex-previous (graph-id parent child)
-  (hashtable-insert (list graph-id child) parent *previous*))
-
-(defun heap-add-arcs (graph-id vertex-id)
-  (mapcar (lambda (arc) (heap-insert graph-id (fifth arc) arc))
-          (graph-vertex-neighbors graph-id vertex-id))
-  T)
+(defun beautify-arc (arc parent)
+  (cond ((strn= (third arc) parent) arc)
+        (T (list 'arc (second arc) parent (third arc) (fifth arc)))))
 
 
 ; grafi
@@ -217,10 +228,6 @@
   NIL)
 
 ;  supporto
-(defun beautify-arc (arc parent)
-  (cond ((strn= (third arc) parent) arc)
-        (T (list 'arc (second arc) parent (third arc) (fifth arc)))))
-
 (defun is-vertex (graph-id vertex-id)
   (and
    (is-graph graph-id)
