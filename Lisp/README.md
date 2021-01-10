@@ -183,7 +183,7 @@ Ritorna T se il minheap heap-id contiene almeno un elemento, NIL altrimenti.
 ```lisp
 heap-head heap-id => (key value)
 ```
-Ritorna la lista formata dalla chiave key e il valore value dell'elemento in testa al minheap heap-id.
+Ritorna la lista formata dalla chiave key e il valore value dell'elemento in testa al minheap heap-id.  
 Se l'heap è vuoto o non esiste ritorna NIL.
 
 #### heap-id

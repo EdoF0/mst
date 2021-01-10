@@ -59,19 +59,18 @@
    *visited*))
 
 (defun mst-recursive (graph-id)
-  (let ((head (heap-extract graph-id)))
-    (if (null head) t
-      (let ((arc (second head)))
-        (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc)))
-          (cond ((null arc) (write 'casobase))
-                ((and (is-visited graph-id from) (is-visited graph-id to))
-                 (mst-recursive graph-id))
-                ((is-visited graph-id from)
-                 (progn (mst-grow graph-id from to weight)
-                   (heap-add-arcs graph-id to) (mst-recursive graph-id)))
-                ((is-visited graph-id to)
-                 (progn (mst-grow graph-id to from weight)
-                   (heap-add-arcs graph-id from) (mst-recursive graph-id)))))))))
+  (let ((arc (second (heap-extract graph-id))))
+    (if (null arc) T
+      (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc)))
+        (cond
+         ((and (is-visited graph-id from) (is-visited graph-id to))
+          (mst-recursive graph-id))
+         ((is-visited graph-id from)
+          (progn (mst-grow graph-id from to weight)
+            (heap-add-arcs graph-id to) (mst-recursive graph-id)))
+         ((is-visited graph-id to)
+          (progn (mst-grow graph-id to from weight)
+            (heap-add-arcs graph-id from) (mst-recursive graph-id))))))))
 
 (defun mst-grow (graph-id from to weight)
   (new-vertex-key graph-id to weight)
