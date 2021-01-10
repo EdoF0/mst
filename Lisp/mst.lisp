@@ -203,7 +203,7 @@
 (defun new-vertex (graph-id vertex-id)
   (if (is-graph graph-id)
       (if (is-vertex graph-id vertex-id)
-          (list 'vertex graph-id vertex-id)
+          (make-vertex-rep graph-id vertex-id)
         (progn
           (hashtable-insert graph-id (cons (1+ (graph-vertices-n graph-id)) (graph-arcs-n graph-id)) *graphs*)
           (hashtable-insert (list 'vertex graph-id vertex-id) (list 'vertex graph-id vertex-id) *vertices*)
