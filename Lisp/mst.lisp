@@ -141,31 +141,19 @@
              (mst-get-floor graph-id source (rest ordered-arcs))))))))
 
 (defun mst-vertex-neighbors (graph-id parent)
-  (let ((children ()) (arcs ()))
-    (maphash
-     (lambda (key val)
-       (if (strn= val parent) (push (second key) children)))
-     *previous*)
-    (mapcar
-     (lambda (child)
-       (push (beautify-arc
-              (or (gethash (list 'arc graph-id parent child) *arcs*)
-                  (gethash (list 'arc graph-id child parent) *arcs*))
-              parent)
-             arcs))
-     children)
-    arcs))
-;(defun mst-vertex-neighbors (graph-id parent)
-;  (remove-if-not
-;   (lambda (vertex)
-;     (or (gethash (list 'arc graph-id parent (second vertex)) *arcs*)
-;         (gethash (list 'arc graph-id (second vertex) parent) *arcs*)))
-;   (hashtable-get-reverse
-;    (lambda (key val)
-;      (declare (ignore key))
-;      (strn= val parent))
-;    *previous*)))
-
+  (mst-vertex-neighbors-recursive
+   graph-id parent
+   (hashtable-get-reverse
+    (lambda (key val)
+      (declare (ignore key))
+      (strn= val parent))
+    *previous*)))
+(defun mst-vertex-neighbors-recursive (graph-id parent vertices)
+  (let ((child (second (first vertices))))
+    (if (not (null child))
+        (cons
+         (is-arc-fluid graph-id parent child)
+         (mst-vertex-neighbors-recursive graph-id parent (rest vertices))))))
 
 (defun mst-order-arcs (arcs)
   (sort arcs #'strn< :key #'fourth)
