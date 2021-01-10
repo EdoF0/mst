@@ -13,17 +13,17 @@
 ;  hashtable per ogni grafo?
 (defparameter *vertex-keys* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: (graph-id child) -> parent
-;  next: forse qualcosa di opposto visto che mi serve per mst-vertex neighbors da parent a childs
+;  next: same
 ;  hashtable per ogni grafo?
 (defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
-;  nuova hashtable mst-id -> (n-of-vertex, n_of_fails) ?
+;  nuova hashtable mst-id -> mst-id
+(defparameter *mst* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  esecuzione
 (defun mst-prim (graph-id source)
   (if (not (null (is-vertex graph-id source)))
-         (progn 
-           (delete-mst graph-id)
-           (new-heap graph-id (length (graph-arcs graph-id)))
+         (progn
+           (new-mst graph-id)
            (new-vertex-key graph-id source most-positive-double-float)
            (new-vertex-visited graph-id source)
            (heap-add-arcs graph-id source)
@@ -41,6 +41,30 @@
   (gethash (list graph-id vertex-id) *previous*))
 
 ;  supporto
+(defun is-mst (mst-id)
+  (if (gethash mst-id *mst*) mst-id))
+(defun new-mst (mst-id)
+  (if (is-mst mst-id) (delete-mst mst-id))
+  (new-heap mst-id (length (graph-arcs mst-id)))
+  (hashtable-insert mst-id (cons 0 0) *mst*))
+(defun delete-mst (mst-id)
+  (hashtable-remove
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (first key) mst-id))
+   *vertex-keys*)
+  (hashtable-remove
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (first key) mst-id))
+   *previous*)
+  (hashtable-remove
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (first key) mst-id))
+   *visited*)
+  (remhash mst-id *mst*))
+
 (defun is-visited (graph-id vertex-id)
   (gethash (list graph-id vertex-id) *visited*))
 
@@ -53,23 +77,28 @@
 (defun new-vertex-previous (graph-id parent child)
   (hashtable-insert (list graph-id child) parent *previous*))
 
-(defun delete-mst (graph-id)
-  (hashtable-remove
-   (lambda (key val)
-     (declare (ignore val))
-     (strn= (first key) graph-id))
-   *vertex-keys*)
-  (hashtable-remove
-   (lambda (key val)
-     (declare (ignore val))
-     (strn= (first key) graph-id))
-   *previous*)
-  (hashtable-remove
-   (lambda (key val)
-     (declare (ignore val))
-     (strn= (first key) graph-id))
-   *visited*))
-
+;(defun mst-recursive (graph-id remaning-vertices fails)
+;  (write remaning-vertices)
+;  (format t "~%")
+;  (write fails)
+;  (format t "~%")
+;  (format t "~%")
+;  (let ((arc (second (heap-extract graph-id))))
+;    (if (or (null arc) (<= remaning-vertices 0)) remaning-vertices
+;      (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc)))
+;        (cond
+;         ((and (is-visited graph-id from) (is-visited graph-id to))
+;          (mst-recursive graph-id remaning-vertices (1+ fails)))
+;         ((is-visited graph-id from)
+;          (progn
+;            (mst-grow graph-id from to weight)
+;            (heap-add-arcs graph-id to)
+;            (mst-recursive graph-id (1- remaning-vertices) 0)))
+;         ((is-visited graph-id to)
+;          (progn
+;            (mst-grow graph-id to from weight)
+;            (heap-add-arcs graph-id from)
+;            (mst-recursive graph-id (1- remaning-vertices) 0))))))))
 (defun mst-recursive (graph-id)
   (let ((arc (second (heap-extract graph-id))))
     (if (null arc) T
@@ -98,8 +127,8 @@
   T)
 
 (defun mst-get-floor (graph-id source ordered-arcs)
-  (let ((arc (fitrst ordered-arcs)))
-    (if (arc)
+  (let ((arc (first ordered-arcs)))
+    (if (not (null arc))
         (let ((from (third arc)) (to (fourth arc)))
           (if (strn= from source)
               (append
@@ -112,11 +141,6 @@
              (mst-get-floor graph-id source (rest ordered-arcs))))))))
 
 (defun mst-vertex-neighbors (graph-id parent)
-;  (hashtable-get
-;   (lambda (key val)
-;     (declare (ignore key))
-;     (strn= val parent))
-;   *previous*)
   (let ((children ()) (arcs ()))
     (maphash
      (lambda (key val)
@@ -127,9 +151,21 @@
        (push (beautify-arc
               (or (gethash (list 'arc graph-id parent child) *arcs*)
                   (gethash (list 'arc graph-id child parent) *arcs*))
-              parent) arcs))
+              parent)
+             arcs))
      children)
     arcs))
+;(defun mst-vertex-neighbors (graph-id parent)
+;  (remove-if-not
+;   (lambda (vertex)
+;     (or (gethash (list 'arc graph-id parent (second vertex)) *arcs*)
+;         (gethash (list 'arc graph-id (second vertex) parent) *arcs*)))
+;   (hashtable-get-reverse
+;    (lambda (key val)
+;      (declare (ignore key))
+;      (strn= val parent))
+;    *previous*)))
+
 
 (defun mst-order-arcs (arcs)
   (sort arcs #'strn< :key #'fourth)
@@ -160,7 +196,7 @@
 
 ;  creazione e modifica
 (defun new-graph (graph-id)
-  (delete-graph graph-id)
+  (if (is-graph graph-id) (delete-graph graph-id))
   (hashtable-insert graph-id graph-id *graphs*))
 (defun delete-graph (graph-id)
   (hashtable-remove
@@ -185,8 +221,10 @@
   (and
    (numberp weight)
    (>= weight 0)
-   (is-vertex graph-id vertexS-id)
-   (is-vertex graph-id vertexT-id)
+   ;(is-vertex graph-id vertexS-id)
+   ;(is-vertex graph-id vertexT-id)
+   (new-vertex graph-id vertexS-id)
+   (new-vertex graph-id vertexT-id)
    (hashtable-insert (list 'arc graph-id vertexS-id vertexT-id) (list 'arc graph-id vertexS-id vertexT-id weight) *arcs*)))
 
 ;  lettura
@@ -350,9 +388,9 @@
 (defun heapify (array index &optional (max most-positive-fixnum))
   (let ((left-index (left-child-idx index))
         (right-index (right-child-idx index))
-        (index-key (car (aref-strong array index)))
-        (left-key (car (aref-strong array (left-child-idx index))))
-        (right-key (car (aref-strong array (right-child-idx index))))
+        (index-key (first (aref-strong array index)))
+        (left-key (first (aref-strong array (left-child-idx index))))
+        (right-key (first (aref-strong array (right-child-idx index))))
         (max-index (min max (1- (length array)))))
     (cond
      ((> left-index max-index) T)
@@ -394,6 +432,13 @@
        (if (funcall condition-function key val) (push val out-list)))
      hashtable)
     out-list))
+(defun hashtable-get-reverse (condition-function hashtable)
+  (let ((out-list ()))
+    (maphash
+     (lambda (key val)
+       (if (funcall condition-function key val) (push key out-list)))
+     hashtable)
+    out-list))
 (defun hashtable-remove (condition-function hashtable)
   (maphash
    (lambda (key val)
@@ -404,7 +449,8 @@
   (if (and (arrayp array?)
            (< index (length array?))
            (>= index 0))
-      (aref array? index)))
+      (let ((value (aref array? index)))
+        (if (not (strn= value 0)) value))))
 
 (defun swap-entries (array i1 i2)
   (let ((e1 (aref-strong array i1))
