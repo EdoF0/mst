@@ -79,17 +79,18 @@
   (new-vertex-visited graph-id to))
 
 (defun mst-get-floor (graph-id source ordered-arcs)
-  (if (null ordered-arcs) nil
-    (let ((from (third (first ordered-arcs))) (to (fourth (first ordered-arcs))))
-      (if (strn= from source)
-          (append
-           (list (first ordered-arcs))
-           (mst-get graph-id to)
-           (mst-get-floor graph-id source (cdr ordered-arcs)))
-        (append 
-         (list (first ordered-arcs))
-         (mst-get graph-id from)
-         (mst-get-floor graph-id source (cdr ordered-arcs)))))))
+  (let ((arc (fitrst ordered-arcs)))
+    (if (arc)
+        (let ((from (third arc)) (to (fourth arc)))
+          (if (strn= from source)
+              (append
+               (list arc)
+               (mst-get graph-id to)
+               (mst-get-floor graph-id source (rest ordered-arcs)))
+            (append 
+             (list arc)
+             (mst-get graph-id from)
+             (mst-get-floor graph-id source (rest ordered-arcs))))))))
 
 (defun mst-vertex-neighbors (graph-id parent)
   (let ((children ()) (arcs ()))
