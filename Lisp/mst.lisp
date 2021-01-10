@@ -16,11 +16,11 @@
 ;  next: same
 ;  hashtable per ogni grafo?
 (defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
-;  nuova hashtable mst-id -> (n-of-vertex) ?
+;  nuova hashtable mst-id -> (n-of-vertex, n_of_fails) ?
 
 ;  esecuzione
 (defun mst-prim (graph-id source)
-  (cond ((not (null (is-vertex graph-id source)))
+  (if (not (null (is-vertex graph-id source)))
          (progn 
            (delete-mst graph-id)
            (new-heap graph-id (length (graph-arcs graph-id)))
@@ -28,12 +28,10 @@
            (new-vertex-visited graph-id source)
            (heap-add-arcs graph-id source)
            (mst-recursive graph-id)
-           nil))))
+           nil)))
 
 (defun mst-get (graph-id source)
-  (mst-get-floor graph-id source
-                 (mst-order-arcs
-                  (mst-vertex-neighbors graph-id source))))
+  (mst-get-floor graph-id source (mst-order-arcs (mst-vertex-neighbors graph-id source))))
 
 ;  dati
 (defun mst-vertex-key (graph-id vertex-id)
@@ -44,18 +42,21 @@
 
 ;  supporto
 (defun delete-mst (graph-id)
-  (maphash (lambda (key val)
-             (declare (ignore val))
-             (if (strn= (first key) graph-id) (remhash key *vertex-keys*)))
-           *vertex-keys*)
-  (maphash (lambda (key val)
-             (declare (ignore val))
-             (if (strn= (first key) graph-id) (remhash key *previous*)))
-           *previous*)
-  (maphash (lambda (key val)
-             (declare (ignore val))
-             (if (strn= (first key) graph-id) (remhash key *visited*)))
-           *visited*))
+  (hashtable-remove
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (first key) graph-id))
+   *vertex-keys*)
+  (hashtable-remove
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (first key) graph-id))
+   *previous*)
+  (hashtable-remove
+   (lambda (key val)
+     (declare (ignore val))
+     (strn= (first key) graph-id))
+   *visited*))
 
 (defun mst-recursive (graph-id)
   (let ((head (heap-extract graph-id)))
@@ -151,15 +152,15 @@
   (delete-graph graph-id)
   (hashtable-insert graph-id graph-id *graphs*))
 (defun delete-graph (graph-id)
-  (maphash
+  (hashtable-remove
    (lambda (key val)
      (declare (ignore val))
-     (if (strn= (second key) graph-id) (remhash key *vertices*)))
+     (strn= (second key) graph-id))
    *vertices*)
-  (maphash
+  (hashtable-remove
    (lambda (key val)
      (declare (ignore val))
-     (if (strn= (second key) graph-id) (remhash key *arcs*)))
+     (strn= (second key) graph-id))
    *arcs*)
   (remhash graph-id *graphs*)
   nil)
@@ -386,6 +387,11 @@
        (if (funcall condition-function key val) (push val out-list)))
      hashtable)
     out-list))
+(defun hashtable-remove (condition-function hashtable)
+  (maphash
+   (lambda (key val)
+     (if (funcall condition-function key val) (remhash key hashtable)))
+   hashtable))
 
 (defun aref-strong (array? index)
   (if (and (arrayp array?)
