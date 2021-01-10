@@ -77,6 +77,28 @@
   (hashtable-insert (list graph-id child) parent *previous*))
 
 ;   mst-prim
+;(defun mst-recursive (graph-id remaning-vertices fails)
+;  (write remaning-vertices)
+;  (format t "~%")
+;  (write fails)
+;  (format t "~%")
+;  (format t "~%")
+;  (let ((arc (second (heap-extract graph-id))))
+;    (if (or (null arc) (<= remaning-vertices 0)) remaning-vertices
+;      (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc)))
+;        (cond
+;         ((and (is-visited graph-id from) (is-visited graph-id to))
+;          (mst-recursive graph-id remaning-vertices (1+ fails)))
+;         ((is-visited graph-id from)
+;          (progn
+;            (mst-grow graph-id from to weight)
+;            (heap-add-arcs graph-id to)
+;            (mst-recursive graph-id (1- remaning-vertices) 0)))
+;         ((is-visited graph-id to)
+;          (progn
+;            (mst-grow graph-id to from weight)
+;            (heap-add-arcs graph-id from)
+;            (mst-recursive graph-id (1- remaning-vertices) 0))))))))
 (defun mst-recursive (graph-id)
   (let ((arc (second (heap-extract graph-id))))
     (if (null arc) T
@@ -311,17 +333,13 @@
 
 ;   graph-print
 (defun list-vertices (graph-id)
-  (hashtable-get
-   (lambda (key val)
-     (and (strn= (second key) graph-id)
-          (not (format t "~A~%" val))))
-   *vertices*))
+  (mapcar
+   (lambda (vertex-rep) (format t "~A~%" vertex-rep))
+   (graph-vertices graph-id)))
 (defun list-arcs (graph-id)
-  (hashtable-get
-   (lambda (key val)
-     (and (strn= (second key) graph-id)
-          (not (format t "~A~%" val))))
-   *arcs*))
+  (mapcar
+   (lambda (arc-rep) (format t "~A~%" arc-rep))
+   (graph-arcs graph-id)))
 
 
 ; minheap
