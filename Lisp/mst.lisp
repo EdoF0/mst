@@ -184,7 +184,8 @@
 ;  creazione e modifica
 (defun new-graph (graph-id)
   (if (is-graph graph-id) (delete-graph graph-id))
-  (hashtable-insert graph-id (cons 0 0) *graphs*))
+  (hashtable-insert graph-id (cons 0 0) *graphs*)
+  graph-id)
 (defun delete-graph (graph-id)
   (hashtable-remove
    (lambda (key val)
@@ -197,15 +198,16 @@
      (strn= (second key) graph-id))
    *arcs*)
   (remhash graph-id *graphs*)
-  nil)
+  NIL)
 
 (defun new-vertex (graph-id vertex-id)
   (if (is-graph graph-id)
-      (if (gethash (list 'vertex graph-id vertex-id) *vertices*)
+      (if (is-vertex graph-id vertex-id)
           (list 'vertex graph-id vertex-id)
         (progn
           (hashtable-insert graph-id (cons (1+ (graph-vertices-n graph-id)) (graph-arcs-n graph-id)) *graphs*)
-          (hashtable-insert (list 'vertex graph-id vertex-id) (list 'vertex graph-id vertex-id) *vertices*)))))
+          (hashtable-insert (list 'vertex graph-id vertex-id) (list 'vertex graph-id vertex-id) *vertices*)
+          (make-vertex-rep graph-id vertex-id)))))
 
 (defun new-arc (graph-id vertexS-id vertexT-id &optional (weight 1))
   (and
@@ -213,13 +215,13 @@
    (>= weight 0)
    ;(is-vertex graph-id vertexS-id)
    ;(is-vertex graph-id vertexT-id)
-   (is-graph graph-id)
    (new-vertex graph-id vertexS-id)
    (new-vertex graph-id vertexT-id)
    (if (not (is-arc-fluid graph-id vertexS-id vertexT-id))
        (hashtable-insert graph-id (cons (graph-vertices-n graph-id) (1+ (graph-arcs-n graph-id))) *graphs*)
      T)
-   (hashtable-insert (list 'arc graph-id vertexS-id vertexT-id) (list 'arc graph-id vertexS-id vertexT-id weight) *arcs*)))
+   (hashtable-insert (list 'arc graph-id vertexS-id vertexT-id) (list 'arc graph-id vertexS-id vertexT-id weight) *arcs*)
+   (make-arc-rep graph-id vertexS-id vertexT-id weight)))
 
 ;  lettura
 (defun is-graph (graph-id)
@@ -260,6 +262,11 @@
   NIL)
 
 ;  supporto
+(defun make-vertex-rep (graph-id vertex-id)
+  (list 'vertex graph-id vertex-id))
+(defun make-arc-rep (graph-id vertexS-id vertexT-id weight)
+  (list 'arc graph-id vertexS-id vertexT-id weight))
+
 (defun graph-vertices-n (graph-id)
   (car (gethash graph-id *graphs*)))
 (defun graph-arcs-n (graph-id)
@@ -268,7 +275,7 @@
 (defun is-vertex (graph-id vertex-id)
   (and
    (is-graph graph-id)
-   (gethash (list 'vertex graph-id vertex-id) *vertices*)))
+   (second (multiple-value-list (gethash (list 'vertex graph-id vertex-id) *vertices*)))))
 (defun is-arc (graph-id vertexS-id vertexT-id &optional weight)
   (if (and (is-graph graph-id) (is-vertex graph-id vertexS-id) (is-vertex graph-id vertexT-id))
    (if (null weight)
@@ -279,6 +286,8 @@
   (if (is-arc graph-id vertexS-id vertexT-id weight)
       (is-arc graph-id vertexS-id vertexT-id weight)
     (is-arc graph-id vertexT-id vertexS-id weight)))
+(defun is-arc-single (graph-id vertexS-id vertexT-id &optional weight)
+  (if (strn< vertexS-id vertexT-id) (is-arc graph-id vertexS-id vertexT-id weight)))
 
 (defun arcs-to-vertices (arcs graph-id vertex-ignore)
   (if (not (null arcs))
