@@ -7,24 +7,25 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 
 ## Links
 - [Prolog documentation](https://www.swi-prolog.org/pldoc/index.html).
+- [Lisp documentation](http://clhs.lisp.se/Front/index.htm).
 - [Forum studenti LP](https://elearning.unimib.it/mod/forum/view.php?id=498956).
 
 ## To-do
-- Testare la lettura e scrittura di un file csv con percorsi diversi dalla cartella corrente ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146815#p249100)) **=>** Ok per sottocartelle.
 - Mettere il "." alla fine di tutti i predicati del README Prolog (Il prof ha fatto così).
-- Delete_graph/heap/altro che ritornano sempre true?
+- ? Prolog delete_graph/heap/altro che ritornano sempre true
+- Controllare il limite di 80 colonne per tutti i file anche i readme!!
+- Controllare predicati / funzioni non utilizzati oppure usati solo una volta
+- Ricordarsi che new-arc in lisp ora crea vertici in automatico, disabilitare questa opzione prima della consegna
 
-### Keep in min
-
-### Optimizations - Prolog
+## Optimizations
 - Fibonacci Heap is better for Prim ([Prim Wikipedia](https://en.wikipedia.org/wiki/Prim%27s_algorithm), [Fibonacci Heap Wikipedia](https://en.wikipedia.org/wiki/Fibonacci_heap)).
-- Ordiniamo tuttti gli archi arc(_, minore, maggiore, _) all'inseriemeto per aggiungere determinismo.
+- ? Fondere vertex-keys e vertex-previus (per poi interrogare di meno il database).
+- ? Controllare ogni archi all'inserimento nell'heap è efficace o non ne vale il tempo speso?
+- Sorting personalizzato degli archi anzichè 2 sorting prima su ordine alfabetico e poi peso.
+- ? Non memorizzare archi in formato link nei vertici ma in formato più facile da trasformare in rappresentazione standard (?solo Lisp?).
+- Controllare dovunque il numero di accessi ai database, diminuirlo quando possibile!
 
-### Follow
-- Dubbio graph_arcs per archi bidirezionali [qui](https://elearning.unimib.it/mod/forum/discuss.php?d=146729#p248947): deve considerare per forza validi tutti i predicati con vertici invertiti?
-- Dubbio write_graph edges da una lista di archi di grafi diversi [qui](https://elearning.unimib.it/mod/forum/discuss.php?d=146760#p249007): legale o no?
+### Prolog
+- Creare il gemello di array-delete-entry per la creazione, per la heap-insert
 
-### Solved
-- Un arco del grafo può essere sovrascritto? **=>** deve ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=142487#p242683)).
-- Come verificare che un grafo sia connesso? È necessario farlo? **=>** i grafi possono essere non connessi ([forum](https://elearning.unimib.it/mod/forum/discuss.php?d=146455#p248573))
-- Dalla consegna sembra che la heap_extract possa estrarre un elemento qualsiasi, ma in teoria deve essere la head. Vedi il [forum](https://elearning.unimib.it/mod/forum/discuss.php?d=145584#p247226) **=>** fatto entrambe.
+### Lisp
