@@ -52,11 +52,6 @@
      (declare (ignore val))
      (strn= (first key) mst-id))
    *previous*)
-  (hashtable-remove
-   (lambda (key val)
-     (declare (ignore val))
-     (strn= (first key) mst-id))
-   *visited*)
   (remhash mst-id *mst*))
 
 (defun is-visited (graph-id vertex-id)
