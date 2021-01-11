@@ -4,11 +4,11 @@
 
 
 ;  hashtables
-;  now: (graph-id vertex-id) -> weight
+;  (graph-id vertex-id) -> weight
 (defparameter *vertex-keys* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
-;  now: (graph-id vertex-child-id) -> vertex-parent-id
+;  (graph-id vertex-child-id) -> vertex-parent-id
 (defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
-;  now: mst-id -> mst-id
+;  mst-id -> mst-id
 (defparameter *mst* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  esecuzione
@@ -160,9 +160,9 @@
 ;  vertex-rep: ('vertex graph-id vertex-id)
 ;  arc-rep: ('arc graph-id vertex-id vertex-id weight)
 ; hashtables
-;  now: graph-id -> (number-of-vertices . number-of-arcs)
+;  graph-id -> (number-of-vertices . number-of-arcs)
 (defparameter *graphs* (make-hash-table :test #'equal :size 10 :rehash-size 1))
-;  next: (graph-id vertex-id) -> list of '(weight . vertex-id)
+;  (graph-id vertex-id) -> list of cons-cells (weight . vertex-id)
 (defparameter *vertices* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 
 ;  creazione e modifica
@@ -260,7 +260,7 @@
    (gethash (list graph-id vertex-id) *vertices*)
    (list graph-id vertex-id)))
 
-;                   graph-id vertex-id => link-list, list of '(weight . vertex-id)
+;                   graph-id vertex-id => link-list, list of cons-cells (weight . vertex-id)
 (defun vertex-list (graph-id vertex-id)
   (first (multiple-value-list (gethash (list graph-id vertex-id) *vertices*))))
 ;                          graph-id vertex-id => link-list filtered, where vertex-id < vertex-linked-id
@@ -337,8 +337,7 @@
 
 ;  heap-rep: ('heap heap-id heap-size actual-heap)
 ;  hashtables
-;  now: heap-id -> ('heap heap-id heap-size actual-heap)
-;  next: heap-id -> (heap-size actual-heap)
+;  heap-id -> ('heap heap-id heap-size actual-heap)
 (defparameter *heaps* (make-hash-table :test #'equal :size 10 :rehash-size 1))
 
 ;  creazione e modifica
