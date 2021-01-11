@@ -151,9 +151,7 @@
 
 ;                      arc-rep-list => arc-rep-list
 (defun mst-order-arcs (arc-rep-list)
-  (sort arc-rep-list #'strn< :key #'fourth)
-  (stable-sort arc-rep-list #'< :key #'fifth)
-  arc-rep-list)
+  (stable-sort (sort arc-rep-list #'strn< :key #'fourth) #'< :key #'fifth))
 
 
 ; grafi
