@@ -85,7 +85,7 @@
         (cond
          ((and (is-visited graph-id from) (is-visited graph-id to))
           (progn
-            ; if >= fails 6 clean heap
+            (if (> fails 6) (mst-clean-heap 'graph-id))
             (mst-recursive graph-id remaning-vertices (1+ fails))))
          ((is-visited graph-id from)
           (progn
@@ -121,10 +121,11 @@
   (mapcar
    (lambda (arc)
      (if (not (gethash (list graph-id (fourth arc)) *vertex-keys*))
-         (heap-insert graph-id (fifth arc) arc)
-       (write "iserimento evitato")))
+         (heap-insert graph-id (fifth arc) arc)))
    (graph-vertex-neighbors graph-id vertex-id))
   T)
+
+(defun mst-clean-heap (graph-id) T)
 
 ;   mst-get
 (defun mst-get-floor (graph-id source ordered-arcs)
@@ -462,6 +463,14 @@
       ((<= parent-key index-key) T)
       ((< index-key parent-key)
        (heapify-up (swap-entries array index parent-index) parent-index)))))
+
+(defun buildheap (heap-id)
+  (buildheap-recursive (heap-array heap-id) (parent-idx (heap-index heap-id))))
+(defun buildheap-recursive (array index)
+  (if (>= index 0)
+      (progn
+        (heapify array index)
+        (buildheap-recursive array (1- index)))))
 
 
 ; supporto generico
