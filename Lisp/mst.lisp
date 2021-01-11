@@ -4,9 +4,6 @@
 
 
 ;  hashtables
-;  now: (graph-id vertex-id) -> T
-;  next: non esiste, usa vertex-key
-(defparameter *visited* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: (graph-id vertex-id) -> weight
 (defparameter *vertex-keys* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: (graph-id vertex-child-id) -> vertex-parent-id
@@ -19,8 +16,7 @@
   (if (not (null (is-vertex graph-id source)))
          (progn
            (new-mst graph-id)
-           (new-vertex-key graph-id source most-positive-double-float)
-           (new-vertex-visited graph-id source)
+           (hashtable-insert (list graph-id source) most-positive-double-float *vertex-keys*)
            (heap-add-arcs graph-id source)
            (mst-recursive graph-id (1- (graph-vertices-n graph-id)) 0)
            nil)))
@@ -63,17 +59,14 @@
    *visited*)
   (remhash mst-id *mst*))
 
-;   visited hashtable, to remove
-(defun new-vertex-visited (graph-id vertex-id)
-  (hashtable-insert (list graph-id vertex-id) T *visited*))
 (defun is-visited (graph-id vertex-id)
-  (gethash (list graph-id vertex-id) *visited*))
-;   vertex-keys
+  (second (multiple-value-list (gethash (list graph-id vertex-id) *vertex-keys*))))
+
 (defun new-vertex-key (graph-id vertex-id weight)
   (let ((old-weight (mst-vertex-key graph-id vertex-id)))
     (cond ((> old-weight weight)
            (hashtable-insert (list graph-id vertex-id) weight *vertex-keys*))) T))
-;   vertex-previouss
+
 (defun new-vertex-previous (graph-id parent child)
   (hashtable-insert (list graph-id child) parent *previous*))
 
@@ -101,8 +94,7 @@
 (defun mst-grow (graph-id from to weight)
   (new-vertex-key graph-id to weight)
   (new-vertex-previous graph-id from to)
-  (new-vertex-key graph-id from weight)
-  (new-vertex-visited graph-id to))
+  (new-vertex-key graph-id from weight))
 
 (defun heap-add-arcs (graph-id vertex-id)
   (mapcar
