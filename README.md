@@ -23,7 +23,7 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 - ? Controllare ogni archi all'inserimento nell'heap è efficace o non ne vale il tempo speso?
 - Sorting personalizzato degli archi anzichè 2 sorting prima su ordine alfabetico e poi peso.
 - ? Non memorizzare archi in formato link nei vertici ma in formato più facile da trasformare in rappresentazione standard (?solo Lisp?).
-- Controllare dovunque il numero di accessi ai database, diminuirlo quando possibile!
+- Controllare dovunque il numero di accessi ai database, diminuirlo quando possibile! (soprattutto per le ricerche, meno per gli accessi mirati)
 
 ### Prolog
 - Creare il gemello di array-delete-entry per la creazione, per la heap-insert
