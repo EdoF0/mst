@@ -43,3 +43,13 @@
 (maphash (lambda (key val) (format t "|~A ~A| " key val)) *vertex-keys*)
 
 (gethash 'wikitest *heaps*)
+
+clean number tests pk_50:
+- 3: 3.1
+- 6: 2.9
+- 7: 2.8 e qualcosa
+- 8: 2.8
+- 9: 2.75
+- 15: 2.71
+- 20: 2.74
+- 30: 2.76

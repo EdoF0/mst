@@ -85,7 +85,7 @@
         (cond
          ((and (is-visited graph-id from) (is-visited graph-id to))
           (progn
-            (if (> fails 6) (mst-clean-heap 'graph-id))
+            (if (> fails 15) (mst-clean-heap graph-id))
             (mst-recursive graph-id remaning-vertices (1+ fails))))
          ((is-visited graph-id from)
           (progn
@@ -120,12 +120,29 @@
 (defun heap-add-arcs (graph-id vertex-id)
   (mapcar
    (lambda (arc)
-     (if (not (gethash (list graph-id (fourth arc)) *vertex-keys*))
+     (if (not (is-visited graph-id (fourth arc)))
          (heap-insert graph-id (fifth arc) arc)))
    (graph-vertex-neighbors graph-id vertex-id))
   T)
 
-(defun mst-clean-heap (graph-id) T)
+(defun mst-clean-heap (graph-id)
+  (let ((hsize (heap-index graph-id)))
+        (mst-clean-heap-recursive graph-id (heap-array graph-id) (1- hsize))
+        (format t "cleaned ~A arcs~%" (- hsize (heap-index graph-id)))
+        (buildheap graph-id)))
+;(defun mst-clean-heap (graph-id)
+;  (mst-clean-heap-recursive graph-id (heap-array graph-id) (1- (heap-index graph-id)))
+;  (buildheap graph-id))
+(defun mst-clean-heap-recursive (heap-id array index)
+  (if (>= index 0)
+      (let ((arc (second (aref-strong array index)))
+            (last-element-index (1- (heap-index heap-id))))
+        (if (and (is-visited (second arc) (third arc)) (is-visited (second arc) (fourth arc)))
+            (progn
+              (swap-entries array index last-element-index)
+              (array-delete-entry array last-element-index)
+              (heap-decrement heap-id)))
+        (mst-clean-heap-recursive heap-id array (1- index)))))
 
 ;   mst-get
 (defun mst-get-floor (graph-id source ordered-arcs)
@@ -373,7 +390,7 @@
     (if (and (> size 0)
              (heapify (swap-entries array 0 (1- size)) 0 (- size 2)))
         (progn
-          (setf (aref array (1- size)) NIL)
+          (array-delete-entry array (1- size))
           (heap-decrement heap-id)
           head))))
 
@@ -465,12 +482,12 @@
        (heapify-up (swap-entries array index parent-index) parent-index)))))
 
 (defun buildheap (heap-id)
-  (buildheap-recursive (heap-array heap-id) (parent-idx (heap-index heap-id))))
-(defun buildheap-recursive (array index)
+  (buildheap-recursive (heap-array heap-id) (parent-idx (heap-index heap-id)) (1- (heap-index heap-id))))
+(defun buildheap-recursive (array index max)
   (if (>= index 0)
       (progn
-        (heapify array index)
-        (buildheap-recursive array (1- index)))))
+        (heapify array index max)
+        (buildheap-recursive array (1- index) max))))
 
 
 ; supporto generico
@@ -523,6 +540,9 @@
                            (setf (aref array i1) e2)
                            (setf (aref array i2) e1)))
           array))))
+
+(defun array-delete-entry (array index)
+  (setf (aref array index) NIL))
 
 ;  make a list of lists a unique lists, just for the first level of lists inside lists
 (defun level-first-level (list)
