@@ -9,7 +9,7 @@
 (defparameter *visited* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: (graph-id vertex-id) -> weight
 (defparameter *vertex-keys* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
-;  now: (graph-id child) -> parent
+;  now: (graph-id vertex-child-id) -> vertex-parent-id
 (defparameter *previous* (make-hash-table :test #'equal :size 50000 :rehash-size 50000))
 ;  now: mst-id -> mst-id
 (defparameter *mst* (make-hash-table :test #'equal :size 10 :rehash-size 1))
@@ -22,7 +22,7 @@
            (new-vertex-key graph-id source most-positive-double-float)
            (new-vertex-visited graph-id source)
            (heap-add-arcs graph-id source)
-           (mst-recursive graph-id)
+           (mst-recursive graph-id (1- (graph-vertices-n graph-id)) 0)
            nil)))
 
 (defun mst-get (graph-id source)
@@ -30,10 +30,11 @@
 
 ;  dati
 (defun mst-vertex-key (graph-id vertex-id)
-  (or (gethash (list graph-id vertex-id) *vertex-keys*) most-positive-double-float))
+  (or (first (multiple-value-list (gethash (list graph-id vertex-id) *vertex-keys*)))
+      most-positive-double-float))
 
 (defun mst-previous (graph-id vertex-id)
-  (gethash (list graph-id vertex-id) *previous*))
+  (first (multiple-value-list (gethash (list graph-id vertex-id) *previous*))))
 
 ;  supporto
 ;   mst
@@ -77,41 +78,38 @@
   (hashtable-insert (list graph-id child) parent *previous*))
 
 ;   mst-prim
-;(defun mst-recursive (graph-id remaning-vertices fails)
-;  (write remaning-vertices)
-;  (format t "~%")
-;  (write fails)
-;  (format t "~%")
-;  (format t "~%")
-;  (let ((arc (second (heap-extract graph-id))))
-;    (if (or (null arc) (<= remaning-vertices 0)) remaning-vertices
-;      (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc)))
-;        (cond
-;         ((and (is-visited graph-id from) (is-visited graph-id to))
-;          (mst-recursive graph-id remaning-vertices (1+ fails)))
-;         ((is-visited graph-id from)
-;          (progn
-;            (mst-grow graph-id from to weight)
-;            (heap-add-arcs graph-id to)
-;            (mst-recursive graph-id (1- remaning-vertices) 0)))
-;         ((is-visited graph-id to)
-;          (progn
-;            (mst-grow graph-id to from weight)
-;            (heap-add-arcs graph-id from)
-;            (mst-recursive graph-id (1- remaning-vertices) 0))))))))
-(defun mst-recursive (graph-id)
+(defun mst-recursive (graph-id remaning-vertices fails)
   (let ((arc (second (heap-extract graph-id))))
-    (if (null arc) T
+    (if (or (null arc) (<= remaning-vertices 0)) (heap-index graph-id)
       (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc)))
         (cond
          ((and (is-visited graph-id from) (is-visited graph-id to))
-          (mst-recursive graph-id))
+          (progn
+            ; if >= fails 6 clean heap
+            (mst-recursive graph-id remaning-vertices (1+ fails))))
          ((is-visited graph-id from)
-          (progn (mst-grow graph-id from to weight)
-            (heap-add-arcs graph-id to) (mst-recursive graph-id)))
+          (progn
+            (mst-grow graph-id from to weight)
+            (heap-add-arcs graph-id to)
+            (mst-recursive graph-id (1- remaning-vertices) 0)))
          ((is-visited graph-id to)
-          (progn (mst-grow graph-id to from weight)
-            (heap-add-arcs graph-id from) (mst-recursive graph-id))))))))
+          (progn
+            (mst-grow graph-id to from weight)
+            (heap-add-arcs graph-id from)
+            (mst-recursive graph-id (1- remaning-vertices) 0))))))))
+;(defun mst-recursive (graph-id)
+;  (let ((arc (second (heap-extract graph-id))))
+;    (if (null arc) T
+;      (let ((from (third arc)) (to (fourth arc)) (weight (fifth arc)))
+;        (cond
+;         ((and (is-visited graph-id from) (is-visited graph-id to))
+;          (mst-recursive graph-id))
+;         ((is-visited graph-id from)
+;          (progn (mst-grow graph-id from to weight)
+;            (heap-add-arcs graph-id to) (mst-recursive graph-id)))
+;         ((is-visited graph-id to)
+;          (progn (mst-grow graph-id to from weight)
+;            (heap-add-arcs graph-id from) (mst-recursive graph-id))))))))
 
 (defun mst-grow (graph-id from to weight)
   (new-vertex-key graph-id to weight)
@@ -122,7 +120,9 @@
 (defun heap-add-arcs (graph-id vertex-id)
   (mapcar
    (lambda (arc)
-     (heap-insert graph-id (fifth arc) arc))
+     (if (not (gethash (list graph-id (fourth arc)) *vertex-keys*))
+         (heap-insert graph-id (fifth arc) arc)
+       (write "iserimento evitato")))
    (graph-vertex-neighbors graph-id vertex-id))
   T)
 
