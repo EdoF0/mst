@@ -470,7 +470,6 @@
 (defun strn< (val1 val2)
   (if (string< (write-to-string val1) (write-to-string val2)) T))
 
-
 ;  hashtable shortcuts
 (defun hashtable-insert (key value hashtable)
   (setf (gethash key hashtable) value))
