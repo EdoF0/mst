@@ -31,3 +31,4 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 - Creare il gemello di array-delete-entry per la creazione, per la heap-insert
 
 ### Lisp
+- ottimizzazione mst-get: (graph-id vertex-parent-id) -> list of vertex-ids.
