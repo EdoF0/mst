@@ -18,6 +18,7 @@ Il progetto ha una implementazione **Lisp** e una implementazione **Prolog**, ci
 - Ricordarsi che new-arc in lisp ora crea vertici in automatico, disabilitare questa opzione prima della consegna
 - Ricordarsi di togliere le negazioni in Prolog che ha detto che è meglio non usarle. Dovrebbero essere tutte negli assert_* e retract_*.
 - Eliminare l'mst all'eliminazione del grafo.
+- Un mst per coppia grafo - source tramite coppie o cons-cell
 
 ## Optimizations
 - Fibonacci Heap is better for Prim ([Prim Wikipedia](https://en.wikipedia.org/wiki/Prim%27s_algorithm), [Fibonacci Heap Wikipedia](https://en.wikipedia.org/wiki/Fibonacci_heap)).
