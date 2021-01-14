@@ -5,7 +5,7 @@ Il progetto ha una implementazione Lisp e una implementazione Prolog, questo è 
 
 ***
 
-# documentazione MST Prolog
+# Documentazione MST Prolog
 
 ## MST
 Il MST (Minimum Spanning Tree, in italiano albero ricoprente minimo di un grafo) è l'albero che tocca tutti i vertici del grafo di partenza nel quale la somma dei pesi degli archi è minima.  

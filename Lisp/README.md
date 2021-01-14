@@ -5,7 +5,7 @@ Il progetto ha una implementazione Lisp e una implementazione Prolog, questo è 
 
 ***
 
-# documentazione MST Lisp
+# Documentazione MST Lisp
 
 ## MST
 Il MST (Minimum Spanning Tree, in italiano albero ricoprente minimo di un grafo) è l'albero che tocca tutti i vertici del grafo di partenza nel quale la somma dei pesi degli archi è minima.  
@@ -44,7 +44,7 @@ k vale `most-positive-double-float` se vertex-id non è parte (ancora) del MST, 
 mst-previous graph-id vertex-id => parent-vertex-id
 ```
 Restituisce il genitore parent-vertex-id di vertex-id nel MST di graph-id.  
-parent-vertex-id vale NIL se vertex-id non è (ancora) parte del MST di graph-id, oppure se vertex-id è la radice, oppure se vertex-id non fa parte della componente del grafo graph-id connessa alla radice del MST, e in tutti gli altri casi.
+parent-vertex-id vale NIL se vertex-id non è ancora parte del MST di graph-id, oppure se vertex-id è la radice, oppure se vertex-id non fa parte della componente del grafo graph-id connessa alla radice del MST, e in tutti gli altri casi.
 
 ***
 
@@ -75,10 +75,10 @@ Ritorna NIL se non esiste graph-id.
 
 #### new-arc
 ```lisp
-new-arc graph-id vertex-id vertex-id &optional (weight 1) => arc-rep
+new-arc graph-id vertex-id-1 vertex-id-2 &optional (weight 1) => arc-rep
 ```
-Crea un nuovo arco dal primo vertex-id al secondo peso weight nel grafo graph-id se non esiste già.  
-Ritorna l'arco rappresentato come `('arc graph-id vertex-id vertex-id weight)`.  
+Crea un nuovo arco da vertex-id-1 a vertex-id-2 con peso weight nel grafo graph-id se non esiste già.  
+Ritorna l'arco rappresentato come `('arc graph-id vertex-id-1 vertex-id-2 weight)`.  
 Ritorna NIL se non esiste graph-id o i vertici specificati, oppure se weight non è un numero non negativo (sono accettati numeri razionali).  
 Creare un arco già esistente con peso diverso sovrascrive quello precedente.
 
@@ -111,14 +111,14 @@ La lista è composta da elementi arc-rep, come ritornato dalla new-arc.
 graph-vertex-neighbors graph-id vertex-id => arc-rep-list
 ```
 Ritorna la lista (arc-rep) di tutti gli archi collegati al vertice vertex-id del grafo graph-id.  
-Se graph-id o vertex-id non esiste la lista è vuota.
+Se graph-id o vertex-id non esistono la lista è vuota.
 
 #### graph-vertex-adjacent
 ```lisp
 graph-vertex-adjacent graph-id vertex-id => vertex-rep-list
 ```
 Ritorna la lista (vertex-rep) di tutti i vertici adiacenti al vertice vertex-id del grafo graph-id.  
-Se graph-id o vertex-id non esiste la lista è vuota.
+Se graph-id o vertex-id non esistono la lista è vuota.
 
 ### Stampa
 
@@ -140,7 +140,7 @@ Tutte le operazioni di modifica includono la riorganizzazione interna della stru
 ```lisp
 new-heap heap-id &optional (capacity 42) => heap-rep
 ```
-Crea un nuovo minheap heap-id, se heap-id esiste già viene sovrascritto.  
+Crea un nuovo minheap heap-id di dimensione capacity, se heap-id esiste già viene sovrascritto.  
 Ritorna l'heap rappresentato come `('heap heap-id heap-size actual-heap)`.
 
 #### heap-delete
